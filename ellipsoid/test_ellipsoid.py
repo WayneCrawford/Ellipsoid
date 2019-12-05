@@ -8,13 +8,13 @@ title_fmt='{:50s}: '
 
 print('Using Ellipsoid.from_covariance()')
 print('=================================')
-title = 'A sphere of unit radius'
+title = 'A sphere of unit radius, should return Ellipse(1,1,1,x,x,x)'
 print(title_fmt.format(title), end='')
 el = Ellipsoid.from_covariance(np.diag((1, 1, 1)))
 print(el)
 el.plot(title=title)
 
-title = 'X,Y,Z = 1,4,3, non-rotated'
+title = 'X,Y,Z = 1,4,3, non-rotated, should return Ellipse(4,1,3,0,0,0)'
 print(title_fmt.format(title), end='')
 el = Ellipsoid.from_covariance(np.array([[1**2, 0, 0],
                                           [0, 4**2, 0],
