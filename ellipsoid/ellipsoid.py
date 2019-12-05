@@ -12,6 +12,9 @@ class Ellipsoid:
                  semi_intermediate_axis_length, major_axis_plunge=0,
                  major_axis_azimuth=0, major_axis_rotation=0,
                  center=(0, 0, 0)):
+        """
+        Create an Ellipsoid instance
+        """
         self.semi_major_axis_length = semi_major_axis_length
         self.semi_minor_axis_length = semi_minor_axis_length
         self.semi_intermediate_axis_length = semi_intermediate_axis_length
