@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from numpy import random
 from ellipsoid import Ellipsoid
 
 title_fmt='{:50s}: '
@@ -140,15 +141,18 @@ el = Ellipsoid(3, 1, 2, 90, 0, -90)
 print(el)
 el.plot(title=title)
 
-# print('Test Ellipse conversion: to/from covariance')
-# print('=================================')
-# ax_len = np.rand(3).sort()   # 3x1 biggest is last
-# ax_ang = np.rand(3,-90:90)   # 3x1, angles between -90 and 90.
-# el = Ellipsoid(ax_len[2], ax_len[0], ax_len[1], ax_ang[0], ax_ang[1], ax_ang[2])
-# print(el)
+print('Test Ellipse conversion: to/from covariance')
+print('=================================')
+ax_len = random.randint(1,10,3)
+ax_len_sorted = np.sort(ax_len)   # 3x1 biggest is last
+ax_ang = random.randint(-90,90,3)   # 3x1, angles between -90 and 90.
+el = Ellipsoid(ax_len_sorted[2], ax_len_sorted[0], ax_len_sorted[1], ax_ang[0], ax_ang[1], ax_ang[2])
+print(el)
 # 
-# print('to/from covariance')
-# print('=================================')
+print('to/from covariance')
+print('=================================')
+
+Ellipsoid.check_equi_covarinace(el)
 # cov=el.to_cov()
 # el2 = Ellipsoid.from_covariance(cov)
 # assert el == el2  # Must write a routine to check equivalence

@@ -195,7 +195,7 @@ class Ellipsoid:
         #cov[1, 1] = temp
 
         return cov
-    
+
     def to_XYEllipse(self, debug=False):
         """
         Return XY-ellipse corresponding to Ellipsoid
@@ -222,6 +222,16 @@ class Ellipsoid:
         cross_covs = cov[0, 1], cov[0, 2], cov[1, 2]
         return errors, cross_covs
 
+    def check_equi_covarinace(self, debug=False):
+        """
+        check equaivalne between from/to covariance
+        """
+        cov = self.to_covariance()
+        print(cov)
+        ell = self.from_covariance(cov)
+        print(ell)
+        #assert np.all(ell() == self.()), 'not equal' 
+
     def plot(self, title=None, debug=False):
         """
         Plots ellipsoid
@@ -241,7 +251,7 @@ class Ellipsoid:
         phi = np.linspace(0, np.pi, n_points)
 
         # Get ellipsoid parameters
-        #eigvals, eigvecs = self.__to_eigen()
+        eigvals, eigvecs = self.__to_eigen()
         cov1 = self.to_covariance()
         eigvals, eigvecs = np.linalg.eig(cov1)
 
@@ -261,11 +271,11 @@ class Ellipsoid:
         Z = rz * np.outer(np.ones(np.size(theta)), np.cos(phi))
 
         # Rotate ellipsoid
-        #old_shape = X.shape
-        #X,Y,Z = X.flatten(), Y.flatten(), Z.flatten()
-        #X,Y,Z = np.matmul(eigvecs, np.array([X,Y,Z]))
+        old_shape = X.shape
+        X,Y,Z = X.flatten(), Y.flatten(), Z.flatten()
+        X,Y,Z = np.matmul(eigvecs, np.array([X,Y,Z]))
         #print(X.shape, Y.shape, Z.shape)
-        #X,Y,Z = X.reshape(old_shape), Y.reshape(old_shape), Z.reshape(old_shape)
+        X,Y,Z = X.reshape(old_shape), Y.reshape(old_shape), Z.reshape(old_shape)
         #print(X.shape, Y.shape, Z.shape)
 
         # Add in offsets, flipping X and Y to correspond to "external"
@@ -308,3 +318,4 @@ def _set_axes_equal(ax):
     origin = np.mean(limits, axis=1)
     radius = 0.5 * np.max(np.abs(limits[:, 1] - limits[:, 0]))
     _set_axes_radius(ax, origin, radius)
+
