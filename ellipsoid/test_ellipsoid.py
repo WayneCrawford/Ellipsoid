@@ -5,99 +5,113 @@ import numpy as np
 from numpy import random
 from ellipsoid import Ellipsoid
 
-title_fmt='{:50s}: '
+title_fmt='{:2d}: {:50s}: '
+i=0
 
+i += 1
 print('Using Ellipsoid.from_covariance()')
 print('=================================')
 title = 'A sphere of unit radius, should return Ellipse(1,1,1,x,x,x)'
-print(title_fmt.format(title), end='')
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.diag((1, 1, 1)))
 print(el)
 el.plot(title=title)
 
+i += 1
 title = 'X,Y,Z = 1,4,3, non-rotated, should return Ellipse(4,1,3,0,90,0)'
-print(title_fmt.format(title), end='')
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[1**2, 0, 0],
-                                          [0, 4**2, 0],
-                                          [0, 0, 3**2]]))
+                                         [0, 4**2, 0],
+                                         [0, 0, 3**2]]))
 print(el)
 el.plot(title=title)
 
+i += 1
 title = 'X,Y,Z = 1,3,4, non-rotated, should return Ellipse(4,1,3,-90,-90,0)'
-print(title_fmt.format(title), end='')
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[1**2, 0, 0],
-                                          [0, 3**2, 0],
-                                          [0, 0, 4**2]]))
+                                         [0, 3**2, 0],
+                                         [0, 0, 4**2]]))
 print(el)
 el.plot(title=title)
 
+i += 1
 title = 'X,Y,Z = 3,1,4 dipping-nonrotated, should return Ellipse(4,1,3,-90,0,0)'
-print(title_fmt.format(title), end='')
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[3**2, 0, 0],
-                                          [0, 1**2, 0],
-                                          [0, 0, 4**2]]))
+                                         [0, 1**2, 0],
+                                         [0, 0, 4**2]]))
 print(el)
 el.plot(title=title)
 
+i += 1
 title = 'X,Y,Z = 3,4,1 rotated, should return Ellipse(4,1,3,0,90,90)'
-print(title_fmt.format(title), end='')
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[3**2, 0, 0],
-                                          [0, 4**2, 0],
-                                          [0, 0, 1**2]]))
+                                         [0, 4**2, 0],
+                                         [0, 0, 1**2]]))
 print(el)
 el.plot(title=title)
 
+i += 1
 title = 'X,Y,Z = 4,3,1 rotated, should return Ellipse(4,1,3,0,0,90)'
-print(title_fmt.format(title), end='')
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[4**2, 0, 0],
-                                          [0, 3**2, 0],
-                                          [0, 0, 1**2]]))
+                                         [0, 3**2, 0],
+                                         [0, 0, 1**2]]))
 print(el)
 el.plot(title=title)
 
 
+i += 1
 print('\nUsing Ellipsoid.from_uncerts()')
 print('=================================')
-title = 'Same as above (error=[1, 4, 3]) should return Ellipse(4,1,3,0,90,0)' 
-print(title_fmt.format(title), end='')
+title = 'X,Y,Z =1,4,3, should return Ellipse(4,1,3,0,90,0)' 
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([1., 4., 3.])
 print(el)
 el.plot(title=title)
 
-title = 'Same X,Y,Z error, max rotated in XY, should return Ellipse(x,x(~0),3,0,x(0-90),0)'
-print(title_fmt.format(title), end='')
+i += 1
+title = 'X,Y,Z =1,4,3, max rotated in XY, should return Ellipse(4.1,0,3,0,x(0-90),0)'
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([1., 4., 3.], [3.999, 0, 0])
 print(el)
 el.plot(title=title)
 
-title = 'Same X,Y,Z error,  max rotated all directions, should look like a straight line from all directions'
-print(title_fmt.format(title), end='')
+i += 1
+title = 'X,Y,Z =1,4,3, max rotated all directions, should look like a straight line from all directions'
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([1., 4., 3.],
     0.999999*np.array([4.*1., 1.*3., 4.*3.]))
 print(el)
 el.plot(title=title)
 
-title = '2 km error in N and E, 3 in Z, no rotation, should return Ellipse(3,2,2,-90,0,0)'
-print(title_fmt.format(title), end='')
+i += 1
+title = 'X,Y,Z = 2,2,3, no rotation, should return Ellipse(3,2,2,-90,0,0)'
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([2., 2., 3.], [0, 0, 0])
 print(el)
 el.plot(title=title)
 
+i += 1
 # This one shows that the rotations aren't done right
-title = 'Same X,Y,Z errors, 45° XY rotation'
-print(title_fmt.format(title), end='')
+title = 'X,Y,Z = 2,2,3, 45° (=atan(2/2)) XY rotation'
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([2., 2., 3.],[3.999, 0, 0])
 print(el)
 el.plot(title=title)
 
-title = 'Same X,Y,Z errors, 45° XZ rotation'
-print(title_fmt.format(title), end='')
+i += 1
+title = 'X,Y,Z = 2,2,3, 56° (=atan(3/2)) XZ rotation'
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([2., 2., 3.],[0, 5.999, 0])
 print(el)
 el.plot(title=title)
 
-title = 'Same X,Y,Z errors, 45° YZ rotation,'
-print(title_fmt.format(title), end='')
+i += 1
+title = 'X,Y,Z = 2,2,3, 56° (=atan(3/2)) YZ rotation,'
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([2., 2., 3.],[0, 0, 5.999])
 print(el)
 el.plot(title=title)
@@ -105,42 +119,49 @@ el.plot(title=title)
 print('Test Ellipse plotting')
 print('=================================')
 
-title = "Aligned, X,Y,Z = 1,3,2 "
-print(title_fmt.format(title), end='')
+i += 1
+title = "X,Y,Z = 1,3,2, Aligned "
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid(3, 1, 2, 0, 90, 0)
 print(el)
 el.plot(title=title)
 
-title = "Aligned, X,Y,Z = 2,3,1"
-print(title_fmt.format(title), end='')
+i += 1
+title = "X,Y,Z = 2,3,1, aligned"
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid(3, 1, 2, 0, 90, 90)
 print(el)
 el.plot(title=title)
 
-title = "Aligned, X,Y,Z = 3,2,1"
-print(title_fmt.format(title), end='')
+i += 1
+title = "X,Y,Z = 3,2,1, aligned"
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid(3, 1, 2, 0, 0, -90)
 print(el)
 el.plot(title=title)
 
-title = "Aligned, X,Y,Z = 2,1,3"
-print(title_fmt.format(title), end='')
+i += 1
+title = "X,Y,Z = 2,1,3, aligned"
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid(3, 1, 2, -90, 0, 0)
 print(el)
 el.plot(title=title)
 
-title = "Aligned, X,Y,Z = 3,1,2"
-print(title_fmt.format(title), end='')
+i += 1
+title = "X,Y,Z = 3,1,2, aligned"
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid(3, 1, 2, 0, 0, 0)
 print(el)
 el.plot(title=title)
 
-title = "Aligned, X,Y,Z = 1,2,3"
-print(title_fmt.format(title), end='')
+i += 1
+title = "X,Y,Z = 1,2,3, aligned"
+print(title_fmt.format(i, title), end='')
 el = Ellipsoid(3, 1, 2, 90, 0, -90)
 print(el)
 el.plot(title=title)
 
+i += 1
 print('Test Ellipse conversion: to/from covariance')
 print('=================================')
 ax_len = random.randint(1,10,3)
