@@ -1,6 +1,7 @@
 #! /bin/env python3
 # -*- coding: utf-8 -*-
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 # import math as m
 # import matplotlib.pyplot as plt
 
@@ -14,6 +15,16 @@ class Ellipsoid:
                  center=(0, 0, 0)):
         """
         Create an Ellipsoid instance
+        
+        if plunge, azimuth, rotation == 0, 0, 0:
+            semi-major is along y (S-N)
+            semi-minor is along x (W-E)
+            
+        Note that the quakeml specification says that x is the S-N
+        direction and y the W-E direction, but their figure 4 shows
+        a geometry in which y would correspond to S-N and x to E-W.
+        They do not say whether the semi-minor axis would correspond
+        to z or to E-W if all angles==0
         """
         self.semi_major_axis_length = semi_major_axis_length
         self.semi_minor_axis_length = semi_minor_axis_length
@@ -139,7 +150,9 @@ class Ellipsoid:
     def __to_eigen(self, debug=False):
         """Return eigenvector matrix corresponding to ellipsoid
 
-        Internal because x, y and z are in ConfidenceEllipsoid order"""
+        Internal because x, y and z are in ConfidenceEllipsoid order
+        
+        ARE YOU SURE?  I THOUGHT THEY WERE y, x, z ORDER?"""
         eigvals = (self.semi_major_axis_length,
                    self.semi_minor_axis_length,
                    self.semi_intermediate_axis_length)
@@ -154,23 +167,33 @@ class Ellipsoid:
         # print(eigvecs)
         return eigvals, eigvecs
 
+
+    def __rotmat(self):
+        """
+        Return rotation matrix of ellipsoid
+        """
+        r = R.from_euler('z', self.major_axis_azimuth, degrees=True) *\
+            R.from_euler('x', self.major_axis_plunge, degrees=True) *\
+            R.from_euler('y', self.major_axis_rotation, degrees=True)
+        return r
+
     @staticmethod
     def __ROT_RH_azi(azi):
-        """Right handed rotation matrix for azimuth in RADIANS"""
+        """Right handed rotation matrix for "azimuth" in RADIANS"""
         c_azi, s_azi = np.cos(azi), np.sin(azi)
         return np.array([[1, 0, 0],
                        [0, c_azi, -s_azi],
                        [0, s_azi, c_azi]])
     @staticmethod
     def __ROT_RH_plunge(plunge):
-        """Right handed rotation matrix for plunge in RADIANS"""
+        """Right handed rotation matrix for "plunge" in RADIANS"""
         c_plunge, s_plunge = np.cos(plunge), np.sin(plunge)      
         return np.array([[c_plunge, 0, s_plunge],
                        [0, 1, 0],
                        [-s_plunge, 0, c_plunge]])
     @staticmethod
     def __ROT_RH_rot(rot):
-        """Right handed rotation matrix for plunge in RADIANS"""
+        """Right handed rotation matrix for "rotation" in RADIANS"""
         c_rot, s_rot = np.cos(rot), np.sin(rot)
         return np.array([[c_rot, -s_rot, 0],
                        [s_rot, c_rot, 0],
@@ -232,7 +255,7 @@ class Ellipsoid:
         print(ell)
         #assert np.all(ell() == self.()), 'not equal' 
 
-    def plot(self, title=None, debug=False):
+    def plot_old(self, title=None, debug=False):
         """
         Plots ellipsoid
 
@@ -294,6 +317,48 @@ class Ellipsoid:
         plt.show()
 
 
+    def plot(self, title=None, debug=False):
+        """
+        Plots ellipsoid
+
+        https://stackoverflow.com/questions/7819498/plotting-ellipsoid-
+              with-matplotlib
+        """
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.mplot3d import Axes3D
+
+        # Make set of spherical angles to draw our ellipsoid
+        n_points = 100
+        theta = np.linspace(0, 2*np.pi, n_points)
+        phi = np.linspace(0, np.pi, n_points)
+
+        # Get the xyz points for plotting
+        # Cartesian coordinates that correspond to the spherical angles:
+        X = self.semi_minor_axis_length * np.outer(np.cos(theta), np.sin(phi))
+        Y = self.semi_major_axis_length * np.outer(np.sin(theta), np.sin(phi))
+        Z = self.semi_intermediate_axis_length *\
+            np.outer(np.ones(np.size(theta)), np.cos(phi))
+
+        old_shape = X.shape
+        X,Y,Z = X.flatten(), Y.flatten(), Z.flatten()
+        r = self.__rotmat()
+        # Rotate ellipsoid
+        XYZ_rot = r.apply(np.array([X,Y,Z]).T)
+        X_rot, Y_rot, Z_rot = XYZ_rot[:,0].reshape(old_shape),\
+                              XYZ_rot[:,1].reshape(old_shape),\
+                              XYZ_rot[:,2].reshape(old_shape)
+        # Plot
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot_wireframe(X_rot, Y_rot, Z_rot, alpha=0.3, color='r')
+        plt.xlabel('x(E)')
+        plt.ylabel('y(N)')
+        if title:
+            plt.title(title)
+        _set_axes_equal(ax)
+        plt.show()
+
+
 def _set_axes_radius(ax, origin, radius):
     ax.set_xlim3d([origin[0] - radius, origin[0] + radius])
     ax.set_ylim3d([origin[1] - radius, origin[1] + radius])
@@ -308,12 +373,9 @@ def _set_axes_equal(ax):
     Input
       ax: a matplotlib axis, e.g., as output from plt.gca().
     '''
-
-    limits = np.array([
-        ax.get_xlim3d(),
-        ax.get_ylim3d(),
-        ax.get_zlim3d(),
-    ])
+    limits = np.array([ax.get_xlim3d(),
+                       ax.get_ylim3d(),
+                       ax.get_zlim3d()])
 
     origin = np.mean(limits, axis=1)
     radius = 0.5 * np.max(np.abs(limits[:, 1] - limits[:, 0]))
