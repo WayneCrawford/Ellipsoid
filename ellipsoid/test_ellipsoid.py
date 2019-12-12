@@ -8,6 +8,7 @@ from ellipsoid import Ellipsoid
 title_fmt='{:2d}: {:50s}: '
 i=0
 
+
 i += 1
 print('Using Ellipsoid.from_covariance()')
 print('=================================')
@@ -36,7 +37,7 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 3,1,4 dipping-nonrotated, should return Ellipse(4,1,3,-90,0,0)'
+title = 'X,Y,Z = 3,1,4 non-rotated, should return Ellipse(4,1,3,-90,0,0)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[3**2, 0, 0],
                                          [0, 1**2, 0],
@@ -45,7 +46,7 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 3,4,1 rotated, should return Ellipse(4,1,3,0,90,90)'
+title = 'X,Y,Z = 3,4,1 non-rotated, should return Ellipse(4,1,3,0,90,90)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[3**2, 0, 0],
                                          [0, 4**2, 0],
@@ -54,7 +55,7 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 4,3,1 rotated, should return Ellipse(4,1,3,0,0,90)'
+title = 'X,Y,Z = 4,3,1 non-rotated, should return Ellipse(4,1,3,0,0,90)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[4**2, 0, 0],
                                          [0, 3**2, 0],
@@ -95,17 +96,45 @@ print(el)
 el.plot(title=title)
 
 i += 1
-# This one shows that the rotations aren't done right
 title = 'X,Y,Z = 2,2,3, 45° (=atan(2/2)) XY rotation'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([2., 2., 3.],[3.999, 0, 0])
 print(el)
 el.plot(title=title)
 
+
+"""
+No rotation
+Eigen values : 2.83,0,3
+Since 2.83 < 3, it is swapping X and Z value and hence X1,X2.X3 are taken according to different eigen vector.
+currently in the ellipsoid.py code: X1, X2, X3 = evecs[:, 2]
+If I change it to X1, X2, X3 = evecs[:, 1], the ellipsoid is rotated. But in that case rest all are rotated in different direction.
+Now resolved..
+"""
+
+i += 1
+title = 'X,Y,Z = 3,3,4, 45° (=atan(3/3)) XY rotation'
+print(title_fmt.format(i, title), end='')
+el = Ellipsoid.from_uncerts([3., 3., 4.],[8.999, 0, 0])
+print(el)
+el.plot(title=title)
+
+"""
+Here Rotation is working with X1, X2, X3 = evecs[:, 2]
+Eigen values : 4.24, 0.0316, 4
+"""
+
 i += 1
 title = 'X,Y,Z = 2,2,3, 56° (=atan(3/2)) XZ rotation'
 print(title_fmt.format(i, title), end='')
-el = Ellipsoid.from_uncerts([2., 2., 3.],[0, 5.999, 0])
+el = Ellipsoid.from_uncerts([2., 2., 3.],[0,5.999, 0])
+print(el)
+el.plot(title=title)
+
+i += 1
+title = 'X,Y,Z = 2,3,2, 45° (=atan(2/2)) XZ rotation'
+print(title_fmt.format(i, title), end='')
+el = Ellipsoid.from_uncerts([2., 3., 2.],[0,3.999, 0])
 print(el)
 el.plot(title=title)
 
@@ -113,6 +142,13 @@ i += 1
 title = 'X,Y,Z = 2,2,3, 56° (=atan(3/2)) YZ rotation,'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([2., 2., 3.],[0, 0, 5.999])
+print(el)
+el.plot(title=title)
+
+i += 1
+title = 'X,Y,Z = 3,2,2, 45° (=atan(2/2)) YZ rotation,'
+print(title_fmt.format(i, title), end='')
+el = Ellipsoid.from_uncerts([3., 2., 2.],[0, 0, 3.999])
 print(el)
 el.plot(title=title)
 
@@ -166,14 +202,17 @@ print('Test Ellipse conversion: to/from covariance')
 print('=================================')
 ax_len = random.randint(1,10,3)
 ax_len_sorted = np.sort(ax_len)   # 3x1 biggest is last
-ax_ang = random.randint(-90,90,3)   # 3x1, angles between -90 and 90.
+ax_ang = random.randint(0,90,3)   # 3x1, angles between -90 and 90.
+#ax_ang = (90,90,0)
 el = Ellipsoid(ax_len_sorted[2], ax_len_sorted[0], ax_len_sorted[1], ax_ang[0], ax_ang[1], ax_ang[2])
 print(el)
-# 
 print('to/from covariance')
 print('=================================')
-
-Ellipsoid.check_equi_covarinace(el)
+#errors, cross_rs = Ellipsoid.to_xyz(el)
+#print(errors)
+#print(cross_rs)
+ell = Ellipsoid.check_equi_covarinace(el)
+print(ell)
 # cov=el.to_cov()
 # el2 = Ellipsoid.from_covariance(cov)
 # assert el == el2  # Must write a routine to check equivalence
