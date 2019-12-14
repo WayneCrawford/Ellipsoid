@@ -197,32 +197,67 @@ el = Ellipsoid(3, 1, 2, 0, 90, -90)
 print(el)
 el.plot(title=title)
 
-i += 1
-print('Test Ellipse conversion: to/from covariance')
+print('\nTest Ellipse conversion:')
 print('=================================')
 ax_len = random.randint(1,10,3)
 ax_len_sorted = np.sort(ax_len)   # 3x1 biggest is last
-ax_ang = random.randint(0,90,3)   # 3x1, angles between -90 and 90.
+ax_ang = random.randint(-90,90,3)   # 3x1, angles between -90 and 90.
 #ax_ang = (90,90,0)
 el = Ellipsoid(ax_len_sorted[2], ax_len_sorted[0], ax_len_sorted[1], ax_ang[0], ax_ang[1], ax_ang[2])
 print(el)
-print('to/from covariance')
-print('=================================')
-#errors, cross_rs = Ellipsoid.to_xyz(el)
-#print(errors)
-#print(cross_rs)
-ell = Ellipsoid.check_equi_covarinace(el)
-print(ell)
+
+i += 1
+title = "to/from covariance"
+print(title_fmt.format(i,title), end='')
+el2 = Ellipsoid.check_equi_covarinace(el)
+print(el2)
 # cov=el.to_cov()
 # el2 = Ellipsoid.from_covariance(cov)
 # assert el == el2  # Must write a routine to check equivalence
 # print(el2)
-# 
-# print('to/from uncertainties')
-# print('=================================')
+
+i += 1
+title = "to/from uncertainties"
+print(title_fmt.format(i,title), end='')
+el2 = Ellipsoid.check_equi_uncerts(el)
+print(el2)
 # uncerts, xcovs = el.to_uncerts()
 # el3 = Ellipsoid.from_uncerts(uncerts, xcovs)
 # assert el == el3  # Must write a routine to check equivalence
 # print(el3)
+
+
+
+print('\nPlot the XY Ellipse corresponding to the ellipsoid')
+print('=================================')
+i += 1
+title = "Ellipsoid(3,1,2,0,0,0) Shlould return ellipse(3,1)"
+print(title_fmt.format(i,title), end='')
+el = Ellipsoid(3, 1, 2, 0, 0, 0)
+#el.plot()
+#cov_xy = Ellipsoid.to_XYEllipse(el)
+xy_el = Ellipsoid.to_XYEllipse(el)
+print(xy_el)
+#xy_el.plot(show=True)
+
+
+i += 1
+title = "Ellipsoid(3,1,2,0,90,0) Should return ellipse(1,3)"
+print(title_fmt.format(i,title), end='')
+el = Ellipsoid(3, 1, 2, 0, 90, 0)
+#el.plot()
+#cov_xy = Ellipsoid.to_XYEllipse(el)
+xy_el = Ellipsoid.to_XYEllipse(el)
+print(xy_el)
+#xy_el.plot(show=True)
+
+i += 1
+title = "Ellipsoid(3,1,2,90,0,0) Should return ellipse(2,1)"
+print(title_fmt.format(i,title), end='')
+el = Ellipsoid(3, 1, 2, 90, 0, 0)
+#el.plot()
+#cov_xy = Ellipsoid.to_XYEllipse(el)
+xy_el = Ellipsoid.to_XYEllipse(el)
+print(xy_el)
 
 

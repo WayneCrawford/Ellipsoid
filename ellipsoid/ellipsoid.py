@@ -194,8 +194,6 @@ class Ellipsoid:
         #eigvecs  = r.as_dcm()
         #print(eigvecs)
 
-        #print(RZ_azi,RY_plunge,RX_rot)
-            
         return eigvals, eigvecs
 
 
@@ -212,9 +210,9 @@ class Ellipsoid:
     def __ROT_RH_azi(azi):
         """Right handed rotation matrix for "azimuth" in RADIANS"""
         c_azi, s_azi = np.cos(azi), np.sin(azi)
-        r = R.from_dcm([[1,0,0],
-                        [0,c_azi, -s_azi],
-                        [0, s_azi, c_azi]])
+        r = R.from_dcm([[c_azi,-s_azi,0],
+                        [s_azi,c_azi,0],
+                        [0,0,1]])
         RX = r.as_dcm()
 
         return RX
@@ -232,9 +230,9 @@ class Ellipsoid:
     def __ROT_RH_rot(rot):
         """Right handed rotation matrix for "rotation" in RADIANS"""
         c_rot, s_rot = np.cos(rot), np.sin(rot)
-        r = R.from_dcm([[c_rot, -s_rot, 0],
-                       [s_rot, c_rot, 0],
-                       [0, 0, 1]])
+        r = R.from_dcm([[1,0, 0],
+                       [0,c_rot, -s_rot ],
+                       [0,s_rot, c_rot ]])
         RZ = r.as_dcm()
 
         return RZ
@@ -245,10 +243,8 @@ class Ellipsoid:
         Uses eigenvals*cov=eigenvecs*cov
         """
         eigvals, eigvecs = self.__to_eigen()
-        """
-        cov = np.matmul(eigvecs , np.diag(eigvals) , np.linalg.inv(eigvecs))
-        cov_symm = (cov + cov.transpose())/2
-        """
+        #cov = np.matmul(eigvecs , np.diag(eigvals) , np.linalg.inv(eigvecs))
+        #cov_symm = (cov + cov.transpose())/2
         cov = eigvecs * np.diag(eigvals) * np.linalg.inv(eigvecs)
 
         # THIS COMMENT IS WRITTEN FOR 2D!!!
@@ -267,11 +263,23 @@ class Ellipsoid:
         """
         Return XY-ellipse corresponding to Ellipsoid
         """
-        a,b = self.semi_major_axis_length, self.semi_minor_axis_length
-        theta = 0
-        center = (0,0)
-        return a,b,theta,center
+        cov = self.to_covariance()
+        #print(cov)
+        errors = np.sqrt(np.diag(cov))
+        cross_covs = cov[0, 1], cov[0, 2], cov[1, 2]
+        #print(errors,cross_covs)
+        cov_xy = [[errors[0]**2,cross_covs[0]],
+                  [cross_covs[0],errors[1]**2]]
 
+        evals,evecs = np.linalg.eig(cov_xy)
+        sort_indices = np.argsort(evals)[::-1]
+        a,b = np.sqrt(evals[sort_indices[0]]), np.sqrt(evals[sort_indices[1]])
+        x_v1, y_v1 = evecs[:, 0]
+        if y_v1 == 0.:
+            theta = 90.
+        else:
+            theta = (np.degrees(np.arctan((x_v1) / (y_v1))) + 180) % 180
+        return a, b, theta
 
     #def to_XYEllipse(self, debug=False):
         """Return XY-plane Ellipse corresponding to Ellipsoid
@@ -282,7 +290,7 @@ class Ellipsoid:
         """
     #    print('to_XYEllipse is not yet written!')
 
-    def to_xyz(self, debug=False):
+    def to_uncerts(self, debug=False):
         """Return xyz and covariances corresponding to ellipsoid """
         cov = self.to_covariance()
         errors = np.sqrt(np.diag(cov))
@@ -298,6 +306,14 @@ class Ellipsoid:
         #print(ell)
         #assert np.all(ell() == self.()), 'not equal' 
         return ell
+
+    def check_equi_uncerts(self,debug=False):
+        """
+        check equaivalne between from/to uncertainties
+        """
+        errors, cross_covs = self.to_uncerts()
+        el = self.from_uncerts(errors,cross_covs)
+        return el
 
     def plot_old(self, title=None, debug=False):
         """
