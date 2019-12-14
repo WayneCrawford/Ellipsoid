@@ -10,27 +10,33 @@ eps = np.finfo(float).eps
 
 class Ellipsoid:
     def __init__(self, semi_major_axis_length, semi_minor_axis_length,
-                 semi_intermediate_axis_length, major_axis_plunge=0,
-                 major_axis_azimuth=0, major_axis_rotation=0,
+                 semi_intermediate_axis_length, major_axis_azimuth=0,
+                 major_axis_plunge=0, major_axis_rotation=0,
                  center=(0, 0, 0)):
         """
-        Create an Ellipsoid instance
+        Create an Ellipsoid instance using QuakeML parameterization
+        
+        The QuakeML manual states
+        'The three Tait-Bryan rotations are performed as follows:
+            (i) a rotation about the Z axis with angle ψ (heading, or azimuth);
+            (ii) a rotation about the Y axis with angle φ (elevation, or plunge);
+            (iii) a rotation about the X axis with angle θ (bank).
+            Note that in the case of Tait-Bryan angles, the rotations are
+            performed about the ellipsoid’s axes, not about the axes of the
+            fixed (x, y, z) Cartesian system.... Note that [the x-y geometry]
+            can be interpreted as a hypothetical view from the interior of the
+            Earth to the inner face of a shell representing Earth’s surface'
+        
         
         if plunge, azimuth, rotation == 0, 0, 0:
-            semi-major is along y (S-N)
-            semi-minor is along x (W-E)
-            
-        Note that the quakeml specification says that x is the S-N
-        direction and y the W-E direction, but their figure 4 shows
-        a geometry in which y would correspond to S-N and x to E-W.
-        They do not say whether the semi-minor axis would correspond
-        to z or to E-W if all angles==0
+            semi-major is along x (S-N)
+            semi-minor is along y (W-E) [the quakeml document does not specify this]
         """
         self.semi_major_axis_length = semi_major_axis_length
         self.semi_minor_axis_length = semi_minor_axis_length
         self.semi_intermediate_axis_length = semi_intermediate_axis_length
-        self.major_axis_plunge = major_axis_plunge
         self.major_axis_azimuth = major_axis_azimuth
+        self.major_axis_plunge = major_axis_plunge
         self.major_axis_rotation = major_axis_rotation
         self.center = center
         self._error_test()
@@ -45,7 +51,7 @@ class Ellipsoid:
             self.semi_major_axis_length, self.semi_minor_axis_length,
             self.semi_intermediate_axis_length)
         s += '{:.3g}, {:.3g}, {:.3g},'.format(
-            self.major_axis_plunge, self.major_axis_azimuth,
+            self.major_axis_azimuth, self.major_axis_plunge,
             self.major_axis_rotation)
         s += ' ({:g}, {:g}, {:g})'.format(self.center[0], self.center[1],
                                           self.center[2])
@@ -67,14 +73,15 @@ class Ellipsoid:
             'not major > intermed > minor'
 
     @classmethod
-    def from_covariance(cls, cov, center=(0, 0, 0), debug=False):
+    def from_covariance(cls, cov, center=(0, 0, 0), debug=True):
         """Set error ellipsoid using covariance matrix
 
         Call as e=ellipsoid.from_covariance(cov)
 
         Inputs:
             cov: 3x3 covariance matrix (indices 0,1,2 correspond to
-                 x,y,z [N,E,Z])
+                 x,y,z.  For geographic data, x=N, y=E,and Z=depth (to view
+                 from above, use an elevation < 0))
             center: center of the ellipse (0,0,0)
 
         The covariance matric must be symmetric and positive definite
@@ -92,13 +99,12 @@ class Ellipsoid:
 
         # EIGH() returns eig fast and sorted if input matrix symmetric
         evals, evecs = np.linalg.eigh(cov)
-        #print(evals)
-        #print(evecs)
 
         assert np.all(evals > 0), 'Covariance matrix is not positive definite'
         #assert np.allclose(np.linalg.norm(evecs),[1.,1.,1.]), 'Eigenvectors are not unit length'
 
         if debug:
+            print()
             print(evecs)
             print(evals)
 
@@ -131,7 +137,10 @@ class Ellipsoid:
         if debug:
             print(Y1, Y2, Y3)
             print(X1, X2, X3)
-        if X2 == 0:
+        # Should this be redone with atan2?
+        if X3 == 1:
+            azimuth = 90
+        elif X2 == 0:
             azimuth = 0
         else:
             azimuth = np.degrees(np.arcsin(X2 / np.sqrt(1 - X3**2)))
@@ -143,7 +152,7 @@ class Ellipsoid:
         if debug:
             print(azimuth, plunge, rotation)
         # print(s_maj,s_min,s_inter,plunge,azimuth,rotation,center)
-        return cls(s_maj, s_min, s_inter, plunge, azimuth, rotation, center)
+        return cls(s_maj, s_min, s_inter, azimuth, plunge, rotation, center)
 
     @classmethod
     def from_uncerts(cls, errors, cross_covs=(0, 0, 0), center=(0, 0, 0),
@@ -152,7 +161,7 @@ class Ellipsoid:
 
         Call as e=ellipsoid.from_uncerts(errors, cross_covs, center)
 
-        x is assumed to be Latitudes, y Longitudes
+        x=N, y=E, z=Depth
 
         Inputs:
             errors:      (x, y, z) errors (m)
@@ -354,7 +363,7 @@ class Ellipsoid:
 
     def plot(self, title=None, debug=False):
         """
-        Plots ellipsoid
+        Plots ellipsoid viewed from -z, corresponding to view from above
 
         https://stackoverflow.com/questions/7819498/plotting-ellipsoid-
               with-matplotlib
@@ -386,10 +395,12 @@ class Ellipsoid:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ax.plot_wireframe(X_rot, Y_rot, Z_rot, alpha=0.3, color='r')
+        ax.view_init(elev=-140., azim=-55.)
         ## x,y of ellipse is not same as x,y of covariance matrix.
         ##Swapped because x and y correspond to N and E respectively in covariance matrix.
-        plt.xlabel('y(E)')
-        plt.ylabel('x(N)')
+        ax.set_xlabel('y(E)')
+        ax.set_ylabel('x(N)')
+        ax.set_zlabel('z(Depth)')
         if title:
             plt.title(title)
         _set_axes_equal(ax)

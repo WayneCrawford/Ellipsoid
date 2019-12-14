@@ -19,7 +19,7 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 1,4,3, non-rotated, should return Ellipse(4,1,3,0,90,0)'
+title = 'X,Y,Z = 1,4,3, aligned, should return Ellipse(4,1,3,90, 0, 0)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[1**2, 0, 0],
                                          [0, 4**2, 0],
@@ -28,7 +28,7 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 1,3,4, non-rotated, should return Ellipse(4,1,3,-90,-90,0)'
+title = 'X,Y,Z = 1,3,4, aligned, should return Ellipse(4,1,3,+-90,+-90,0)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[1**2, 0, 0],
                                          [0, 3**2, 0],
@@ -37,7 +37,7 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 3,1,4 non-rotated, should return Ellipse(4,1,3,-90,0,0)'
+title = 'X,Y,Z = 3,1,4 aligned, should return Ellipse(4, 1, 3, 0, +-90, 0)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[3**2, 0, 0],
                                          [0, 1**2, 0],
@@ -46,7 +46,7 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 3,4,1 non-rotated, should return Ellipse(4,1,3,0,90,90)'
+title = 'X,Y,Z = 3,4,1 aligned, should return Ellipse(4,1,3,0,90,90)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[3**2, 0, 0],
                                          [0, 4**2, 0],
@@ -55,7 +55,7 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 4,3,1 non-rotated, should return Ellipse(4,1,3,0,0,90)'
+title = 'X,Y,Z = 4,3,1 aligned, should return Ellipse(4,1,3,0,0,90)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[4**2, 0, 0],
                                          [0, 3**2, 0],
@@ -67,21 +67,21 @@ el.plot(title=title)
 i += 1
 print('\nUsing Ellipsoid.from_uncerts()')
 print('=================================')
-title = 'X,Y,Z =1,4,3, should return Ellipse(4,1,3,0,90,0)' 
+title = 'X,Y,Z = 1,4,3, should return Ellipse(4,1,3,90,0,0)' 
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([1., 4., 3.])
 print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z =1,4,3, max rotated in XY, should return Ellipse(4.1,0,3,0,x(0-90),0)'
+title = 'X,Y,Z = 1,4,3, cov_XY=max, should return Ellipse(4.1,0,3,0,X,0)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([1., 4., 3.], [3.999, 0, 0])
 print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z =1,4,3, max rotated all directions, should look like a straight line from all directions'
+title = 'X,Y,Z =1,4,3, cov_XY,_XZ & YZ = max, should look like a straight line'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([1., 4., 3.],
     0.999999*np.array([4.*1., 1.*3., 4.*3.]))
@@ -89,14 +89,14 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 2,2,3, no rotation, should return Ellipse(3,2,2,-90,0,0)'
+title = 'X,Y,Z = 2,2,3, aligned, should return Ellipse(3,2,2,0,00,0)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([2., 2., 3.], [0, 0, 0])
 print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 2,2,3, 45° (=atan(2/2)) XY rotation'
+title = 'X,Y,Z = 2,2,3, covXY=max'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([2., 2., 3.],[3.999, 0, 0])
 print(el)
@@ -113,7 +113,7 @@ Now resolved..
 """
 
 i += 1
-title = 'X,Y,Z = 3,3,4, 45° (=atan(3/3)) XY rotation'
+title = 'X,Y,Z = 3,3,4, cov_XY=max'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([3., 3., 4.],[8.999, 0, 0])
 print(el)
@@ -125,28 +125,28 @@ Eigen values : 4.24, 0.0316, 4
 """
 
 i += 1
-title = 'X,Y,Z = 2,2,3, 56° (=atan(3/2)) XZ rotation'
+title = 'X,Y,Z = 2,2,3, cov_XZ=max'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([2., 2., 3.],[0,5.999, 0])
 print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 2,3,2, 45° (=atan(2/2)) XZ rotation'
+title = 'X,Y,Z = 2,3,2, cov_XZ=max'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([2., 3., 2.],[0,3.999, 0])
 print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 2,2,3, 56° (=atan(3/2)) YZ rotation,'
+title = 'X,Y,Z = 2,2,3, cov_YZ=max,'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([2., 2., 3.],[0, 0, 5.999])
 print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 3,2,2, 45° (=atan(2/2)) YZ rotation,'
+title = 'X,Y,Z = 3,2,2, cov_YZ=max,'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([3., 2., 2.],[0, 0, 3.999])
 print(el)
@@ -158,28 +158,28 @@ print('=================================')
 i += 1
 title = "X,Y,Z = 1,3,2, Aligned "
 print(title_fmt.format(i, title), end='')
-el = Ellipsoid(3, 1, 2, 0, 90, 0)
+el = Ellipsoid(3, 1, 2, 90, 0, 0)
 print(el)
 el.plot(title=title)
 
 i += 1
 title = "X,Y,Z = 2,3,1, aligned"
 print(title_fmt.format(i, title), end='')
-el = Ellipsoid(3, 1, 2, 0, 90, 90)
+el = Ellipsoid(3, 1, 2, 90, 0, 90)
 print(el)
 el.plot(title=title)
 
 i += 1
 title = "X,Y,Z = 3,2,1, aligned"
 print(title_fmt.format(i, title), end='')
-el = Ellipsoid(3, 1, 2, 0, 0, -90)
+el = Ellipsoid(3, 1, 2, 0, 0, 90)
 print(el)
 el.plot(title=title)
 
 i += 1
 title = "X,Y,Z = 2,1,3, aligned"
 print(title_fmt.format(i, title), end='')
-el = Ellipsoid(3, 1, 2, -90, 0, 0)
+el = Ellipsoid(3, 1, 2, 0, 90, 0)
 print(el)
 el.plot(title=title)
 
@@ -193,7 +193,7 @@ el.plot(title=title)
 i += 1
 title = "X,Y,Z = 1,2,3, aligned"
 print(title_fmt.format(i, title), end='')
-el = Ellipsoid(3, 1, 2, 90, 0, -90)
+el = Ellipsoid(3, 1, 2, 0, 90, -90)
 print(el)
 el.plot(title=title)
 
