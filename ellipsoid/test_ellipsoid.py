@@ -12,14 +12,14 @@ i=0
 i += 1
 print('Using Ellipsoid.from_covariance()')
 print('=================================')
-title = 'A sphere of unit radius, should return Ellipse(1,1,1,x,x,x)'
+title = 'A sphere of unit radius, should return Ellipse(1, 1, 1, x, x, x)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.diag((1, 1, 1)))
 print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 1,4,3, aligned, should return Ellipse(4,1,3,90, 0, 0)'
+title = 'X,Y,Z = 1,4,3, aligned, should return Ellipse(4, 1, 3, 90, 0, 0)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[1**2, 0, 0],
                                          [0, 4**2, 0],
@@ -28,7 +28,7 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 1,3,4, aligned, should return Ellipse(4,1,3,+-90,+-90,0)'
+title = 'X,Y,Z = 1,3,4, aligned, should return Ellipse(4, 1, 3, 90, 90, 0)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[1**2, 0, 0],
                                          [0, 3**2, 0],
@@ -37,7 +37,7 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 3,1,4 aligned, should return Ellipse(4, 1, 3, 0, +-90, 0)'
+title = 'X,Y,Z = 3,1,4 aligned, should return Ellipse(4, 1, 3, 0, 90, 0)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[3**2, 0, 0],
                                          [0, 1**2, 0],
@@ -46,7 +46,7 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 3,4,1 aligned, should return Ellipse(4,1,3,0,90,90)'
+title = 'X,Y,Z = 3,4,1 aligned, should return Ellipse(4, 1, 3, 90, 0, 90)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[3**2, 0, 0],
                                          [0, 4**2, 0],
@@ -55,7 +55,7 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 4,3,1 aligned, should return Ellipse(4,1,3,0,0,90)'
+title = 'X,Y,Z = 4,3,1 aligned, should return Ellipse(4, 1, 3, 0, 0, 90)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_covariance(np.array([[4**2, 0, 0],
                                          [0, 3**2, 0],
@@ -74,14 +74,15 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 1,4,3, cov_XY=max, should return Ellipse(4.1,0,3,0,X,0)'
+title = 'X,Y,Z = 1,4,3, cov_XY=max, should return Ellipse(4.1, 0, 3, atan(4), 0, 0)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([1., 4., 3.], [3.999, 0, 0])
 print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z =1,4,3, cov_XY,_XZ & YZ = max, should look like a straight line'
+title = 'X,Y,Z = 1,4,3, cov_XY,_XZ & YZ = max, should return '
+title += 'Ellipse(5.1, 0, 0, 76, x, x), look like a straight line'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([1., 4., 3.],
     0.999999*np.array([4.*1., 1.*3., 4.*3.]))
@@ -89,14 +90,14 @@ print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 2,2,3, aligned, should return Ellipse(3,2,2,0,00,0)'
+title = 'X,Y,Z = 2,2,3, aligned, should return Ellipse(3, 2, 2,0, 90, 0)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([2., 2., 3.], [0, 0, 0])
 print(el)
 el.plot(title=title)
 
 i += 1
-title = 'X,Y,Z = 2,2,3, covXY=max'
+title = 'X,Y,Z = 2,2,3, covXY=max, should return Ellipsoid(3, 0, 2.8, 45, 0, 0)'
 print(title_fmt.format(i, title), end='')
 el = Ellipsoid.from_uncerts([2., 2., 3.],[3.999, 0, 0])
 print(el)

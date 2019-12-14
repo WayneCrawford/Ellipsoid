@@ -15,22 +15,22 @@ class Ellipsoid:
                  center=(0, 0, 0)):
         """
         Create an Ellipsoid instance using QuakeML parameterization
-        
+
         The QuakeML manual states
         'The three Tait-Bryan rotations are performed as follows:
             (i) a rotation about the Z axis with angle ψ (heading, or azimuth);
-            (ii) a rotation about the Y axis with angle φ (elevation, or plunge);
+            (ii) a rotation about the Y axis with angle φ (elevation, or
+                 plunge);
             (iii) a rotation about the X axis with angle θ (bank).
             Note that in the case of Tait-Bryan angles, the rotations are
             performed about the ellipsoid’s axes, not about the axes of the
             fixed (x, y, z) Cartesian system.... Note that [the x-y geometry]
             can be interpreted as a hypothetical view from the interior of the
             Earth to the inner face of a shell representing Earth’s surface'
-        
-        
+
         if plunge, azimuth, rotation == 0, 0, 0:
             semi-major is along x (S-N)
-            semi-minor is along y (W-E) [the quakeml document does not specify this]
+            semi-minor is along y (W-E) [QuakeML document does not specify]
         """
         self.semi_major_axis_length = semi_major_axis_length
         self.semi_minor_axis_length = semi_minor_axis_length
@@ -73,7 +73,7 @@ class Ellipsoid:
             'not major > intermed > minor'
 
     @classmethod
-    def from_covariance(cls, cov, center=(0, 0, 0), debug=True):
+    def from_covariance(cls, cov, center=(0, 0, 0), debug=False):
         """Set error ellipsoid using covariance matrix
 
         Call as e=ellipsoid.from_covariance(cov)
@@ -99,59 +99,28 @@ class Ellipsoid:
 
         # EIGH() returns eig fast and sorted if input matrix symmetric
         evals, evecs = np.linalg.eigh(cov)
-
         assert np.all(evals > 0), 'Covariance matrix is not positive definite'
-        #assert np.allclose(np.linalg.norm(evecs),[1.,1.,1.]), 'Eigenvectors are not unit length'
+        # assert np.allclose(np.linalg.norm(evecs),[1.,1.,1.]),
+        #                    'Eigenvectors are not unit length'
 
         if debug:
             print()
             print(evecs)
             print(evals)
 
-        #Semi-major axis lengths
-        s_min, s_inter, s_maj = np.sqrt(evals)
-        #print(s_min,s_inter,s_maj)
+        # print(s_min,s_inter,s_maj)
 
-        
         # Calculate angles of semi-major axis
         # From wikipedia (z-x'-y'' convention, left-hand rule)
         Y1, Y2, Y3 = evecs[:, 0]  # Unit semi-minor axis ("Y")
-        if  not cov[0,1] == 0: ##XY rotation
-            if s_maj <=  np.sqrt(cov[2,2]):
-                X1, X2, X3 = evecs[:, 1]
-            else:
-                X1, X2, X3 = evecs[:, 2]
-        elif not cov[0,2] == 0: ##XZ rotation
-            if s_maj <=  np.sqrt(cov[1,1]):
-                X1, X2, X3 = evecs[:, 1]
-            else:
-                X1, X2, X3 = evecs[:, 2]
-        elif not cov[1,2] == 0: ##YZ rotation
-            if s_maj <=  np.sqrt(cov[0,0]):
-                X1, X2, X3 = evecs[:, 1]
-            else:
-                X1, X2, X3 = evecs[:, 2]
-        else:
-            X1, X2, X3 = evecs[:, 2]  # Unit semi-major axis ("X")
-        #print(X1,X2,X3,Y1,Y2,Y3)
+        X1, X2, X3 = cls._choose_semi_major(cov, evecs, evals)
         if debug:
             print(Y1, Y2, Y3)
             print(X1, X2, X3)
-        # Should this be redone with atan2?
-        if X3 == 1:
-            azimuth = 90
-        elif X2 == 0:
-            azimuth = 0
-        else:
-            azimuth = np.degrees(np.arcsin(X2 / np.sqrt(1 - X3**2)))
-        plunge = np.degrees(np.arcsin(-X3))
-        if Y3 == 0:
-            rotation = 0
-        else:
-            rotation = np.degrees(np.arcsin(Y3 / np.sqrt(1 - X3**2)))
-        if debug:
-            print(azimuth, plunge, rotation)
-        # print(s_maj,s_min,s_inter,plunge,azimuth,rotation,center)
+        azimuth, plunge, rotation = cls._calc_rotation_angles(X2, X3, Y3)
+
+        # Semi-major axis lengths
+        s_min, s_inter, s_maj = np.sqrt(evals)
         return cls(s_maj, s_min, s_inter, azimuth, plunge, rotation, center)
 
     @classmethod
@@ -173,29 +142,69 @@ class Ellipsoid:
                [cross_covs[1], cross_covs[2], errors[2]**2]]
         return cls.from_covariance(cov, center)
 
+    @staticmethod
+    def _choose_semi_major(cov, evecs, evals):
+        """
+        Calculate semi-major axis unit vector
+
+        :param cov: covariance matrix
+        :param evals: eigenvalues sorted from smallest to largest [1x3]
+        :param evecs: corresponding eigenvectors (1/row)
+        """
+        # Why all these specific cases resulting in taking evecs[:,1]
+        # (intermediate axis) instead of just taking evecs[:,2]?
+        if not cov[0, 1] == 0 and evals[2] <= cov[2, 2]:     # XY rotation
+            return evecs[:, 1]
+        elif not cov[0, 2] == 0 and evals[2] <= cov[1, 1]:   # XZ rotation
+            return evecs[:, 1]
+        elif not cov[1, 2] == 0 and evals[2] <= cov[0, 0]:  # YZ rotation
+            return evecs[:, 1]
+        return evecs[:, 2]
+
+    @staticmethod
+    def _calc_rotation_angles(X2, X3, Y3, debug=False):
+        """
+        Calculate rotation angles from semi-major & -minor vector components
+        """
+        # Should this be redone using atan2?
+#         if X3 == 1:
+#             azimuth = 90
+        if X2 == 0:
+            azimuth = 0
+        else:
+            azimuth = np.degrees(np.arcsin(X2 / np.sqrt(1 - X3**2)))
+        plunge = np.degrees(np.arcsin(-X3))
+        if Y3 == 0:
+            rotation = 0
+        else:
+            rotation = np.degrees(np.arcsin(Y3 / np.sqrt(1 - X3**2)))
+        if debug:
+            print(azimuth, plunge, rotation)
+        return azimuth, plunge, rotation
+
     def __to_eigen(self, debug=False):
         """Return eigenvector matrix corresponding to ellipsoid
 
         Internal because x, y and z are in ConfidenceEllipsoid order
-        
+
         ARE YOU SURE?  I THOUGHT THEY WERE y, x, z ORDER?"""
         eigvals = (self.semi_major_axis_length**2,
                    self.semi_minor_axis_length**2,
                    self.semi_intermediate_axis_length**2)
         # https://math.stackexchange.com/questions/1403126/what-is-the-general-equation-equation-for-rotated-ellipsoid
         RZ_azi = Ellipsoid.__ROT_RH_azi(np.radians(self.major_axis_azimuth))
-        RY_plunge = Ellipsoid.__ROT_RH_plunge(np.radians(self.major_axis_plunge))
+        RY_plunge = Ellipsoid.__ROT_RH_plunge(np.radians(
+            self.major_axis_plunge))
         RX_rot = Ellipsoid.__ROT_RH_rot(np.radians(self.major_axis_rotation))
 
-        #eigvecs = np.matmul(RZ_azi , RY_plunge , RX_rot)
+        # eigvecs = np.matmul(RZ_azi , RY_plunge , RX_rot)
         eigvecs = RZ_azi * RY_plunge * RX_rot
 
-        #r = self.__rotmat()
-        #eigvecs  = r.as_dcm()
-        #print(eigvecs)
+        # r = self.__rotmat()
+        # eigvecs  = r.as_dcm()
+        # print(eigvecs)
 
         return eigvals, eigvecs
-
 
     def __rotmat(self):
         """
@@ -210,31 +219,30 @@ class Ellipsoid:
     def __ROT_RH_azi(azi):
         """Right handed rotation matrix for "azimuth" in RADIANS"""
         c_azi, s_azi = np.cos(azi), np.sin(azi)
-        r = R.from_dcm([[c_azi,-s_azi,0],
-                        [s_azi,c_azi,0],
-                        [0,0,1]])
+        r = R.from_dcm([[c_azi, -s_azi, 0],
+                        [s_azi, c_azi, 0],
+                        [0, 0, 1]])
         RX = r.as_dcm()
-
         return RX
+
     @staticmethod
     def __ROT_RH_plunge(plunge):
         """Right handed rotation matrix for "plunge" in RADIANS"""
-        c_plunge, s_plunge = np.cos(plunge), np.sin(plunge)      
+        c_plunge, s_plunge = np.cos(plunge), np.sin(plunge)
         r = R.from_dcm([[c_plunge, 0, s_plunge],
                        [0, 1, 0],
                        [-s_plunge, 0, c_plunge]])
         RY = r.as_dcm()
-
         return RY
+
     @staticmethod
     def __ROT_RH_rot(rot):
         """Right handed rotation matrix for "rotation" in RADIANS"""
         c_rot, s_rot = np.cos(rot), np.sin(rot)
-        r = R.from_dcm([[1,0, 0],
-                       [0,c_rot, -s_rot ],
-                       [0,s_rot, c_rot ]])
+        r = R.from_dcm([[1, 0, 0],
+                       [0, c_rot, -s_rot],
+                       [0, s_rot, c_rot]])
         RZ = r.as_dcm()
-
         return RZ
 
     def to_covariance(self, debug=False):
@@ -243,19 +251,19 @@ class Ellipsoid:
         Uses eigenvals*cov=eigenvecs*cov
         """
         eigvals, eigvecs = self.__to_eigen()
-        #cov = np.matmul(eigvecs , np.diag(eigvals) , np.linalg.inv(eigvecs))
-        #cov_symm = (cov + cov.transpose())/2
+        # cov = np.matmul(eigvecs , np.diag(eigvals) , np.linalg.inv(eigvecs))
+        # cov_symm = (cov + cov.transpose())/2
         cov = eigvecs * np.diag(eigvals) * np.linalg.inv(eigvecs)
 
         # THIS COMMENT IS WRITTEN FOR 2D!!!
         # Convert to standard coordinates (x=E, y=N). Transform covariance
         # matrix to CovarianceEllipse coordinates (x=N,y=E)
-        #temp = cov(0, 1)   # old c_xz, becomes c_yz
-        #cov[0, 2], cov[2, 0] = cov[1, 2], cov[1, 2]
-        #cov[1, 2], cov[2, 1] = temp, temp
-        #temp = cov[0, 0]  # old c_xx, becomes c_yy
-        #cov[0, 0] = cov[1, 1]
-        #cov[1, 1] = temp
+        # temp = cov(0, 1)   # old c_xz, becomes c_yz
+        # cov[0, 2], cov[2, 0] = cov[1, 2], cov[1, 2]
+        # cov[1, 2], cov[2, 1] = temp, temp
+        # temp = cov[0, 0]  # old c_xx, becomes c_yy
+        # cov[0, 0] = cov[1, 1]
+        # cov[1, 1] = temp
 
         return cov
 
@@ -264,16 +272,16 @@ class Ellipsoid:
         Return XY-ellipse corresponding to Ellipsoid
         """
         cov = self.to_covariance()
-        #print(cov)
+        # print(cov)
         errors = np.sqrt(np.diag(cov))
         cross_covs = cov[0, 1], cov[0, 2], cov[1, 2]
-        #print(errors,cross_covs)
-        cov_xy = [[errors[0]**2,cross_covs[0]],
-                  [cross_covs[0],errors[1]**2]]
+        # print(errors,cross_covs)
+        cov_xy = [[errors[0]**2, cross_covs[0]],
+                  [cross_covs[0], errors[1]**2]]
 
-        evals,evecs = np.linalg.eig(cov_xy)
+        evals, evecs = np.linalg.eig(cov_xy)
         sort_indices = np.argsort(evals)[::-1]
-        a,b = np.sqrt(evals[sort_indices[0]]), np.sqrt(evals[sort_indices[1]])
+        a, b = np.sqrt(evals[sort_indices[0]]), np.sqrt(evals[sort_indices[1]])
         x_v1, y_v1 = evecs[:, 0]
         if y_v1 == 0.:
             theta = 90.
@@ -281,13 +289,13 @@ class Ellipsoid:
             theta = (np.degrees(np.arctan((x_v1) / (y_v1))) + 180) % 180
         return a, b, theta
 
-    #def to_XYEllipse(self, debug=False):
-        """Return XY-plane Ellipse corresponding to Ellipsoid
-
-        Should probably make a generic to_Ellipse, allowing one 
-        to extract the Ellipse viewed from any angle, then to_XYEllipse
-        would call this code from the appropriate view angle
-        """
+    # def to_XYEllipse(self, debug=False):
+    #    """Return XY-plane Ellipse corresponding to Ellipsoid
+    #
+    #    Should probably make a generic to_Ellipse, allowing one
+    #    to extract the Ellipse viewed from any angle, then to_XYEllipse
+    #    would call this code from the appropriate view angle
+    #    """
     #    print('to_XYEllipse is not yet written!')
 
     def to_uncerts(self, debug=False):
@@ -303,16 +311,16 @@ class Ellipsoid:
         """
         cov = self.to_covariance()
         ell = self.from_covariance(cov)
-        #print(ell)
-        #assert np.all(ell() == self.()), 'not equal' 
+        # print(ell)
+        # assert np.all(ell() == self.()), 'not equal'
         return ell
 
-    def check_equi_uncerts(self,debug=False):
+    def check_equi_uncerts(self, debug=False):
         """
         check equaivalne between from/to uncertainties
         """
         errors, cross_covs = self.to_uncerts()
-        el = self.from_uncerts(errors,cross_covs)
+        el = self.from_uncerts(errors, cross_covs)
         return el
 
     def plot_old(self, title=None, debug=False):
@@ -339,13 +347,12 @@ class Ellipsoid:
         eigvals, eigvecs = np.linalg.eig(cov1)
 
         # Width, height and depth of ellipsoid
-        #rx, ry, rz = (self.semi_major_axis_length,
+        # rx, ry, rz = (self.semi_major_axis_length,
         #           self.semi_minor_axis_length,
         #           self.semi_intermediate_axis_length)
 
-        rx,ry,rz = eigvals
-        #print(rx,ry,rz)
-
+        rx, ry, rz = eigvals
+        # print(rx,ry,rz)
 
         # Get the xyz points for plotting
         # Cartesian coordinates that correspond to the spherical angles:
@@ -355,17 +362,18 @@ class Ellipsoid:
 
         # Rotate ellipsoid
         old_shape = X.shape
-        X,Y,Z = X.flatten(), Y.flatten(), Z.flatten()
-        X,Y,Z = np.matmul(eigvecs, np.array([X,Y,Z]))
-        #print(X.shape, Y.shape, Z.shape)
-        X,Y,Z = X.reshape(old_shape), Y.reshape(old_shape), Z.reshape(old_shape)
-        #print(X.shape, Y.shape, Z.shape)
+        X, Y, Z = X.flatten(), Y.flatten(), Z.flatten()
+        X, Y, Z = np.matmul(eigvecs, np.array([X, Y, Z]))
+        # print(X.shape, Y.shape, Z.shape)
+        X, Y, Z = (X.reshape(old_shape), Y.reshape(old_shape),
+                   Z.reshape(old_shape))
+        # print(X.shape, Y.shape, Z.shape)
 
         # Add in offsets, flipping X and Y to correspond to "external"
         # convention
-        #X = Y + self.center[0]
-        #Y = X + self.center[1]
-        #Z = Z + self.center[2]
+        # X = Y + self.center[0]
+        # Y = X + self.center[1]
+        # Z = Z + self.center[2]
 
         # Plot
         ax.plot_wireframe(X, Y, Z, alpha=0.3, color='r')
@@ -375,7 +383,6 @@ class Ellipsoid:
             plt.title(title)
         _set_axes_equal(ax)
         plt.show()
-
 
     def plot(self, title=None, debug=False):
         """
@@ -389,7 +396,7 @@ class Ellipsoid:
 
         # Make set of spherical angles to draw our ellipsoid
         n_points = 100
-        theta = np.linspace(0, 2*np.pi, n_points)
+        theta = np.linspace(0, 2 * np.pi, n_points)
         phi = np.linspace(0, np.pi, n_points)
 
         # Get the xyz points for plotting
@@ -400,20 +407,21 @@ class Ellipsoid:
             np.outer(np.ones(np.size(theta)), np.cos(phi))
 
         old_shape = X.shape
-        X,Y,Z = X.flatten(), Y.flatten(), Z.flatten()
+        X, Y, Z = X.flatten(), Y.flatten(), Z.flatten()
         r = self.__rotmat()
         # Rotate ellipsoid
-        XYZ_rot = r.apply(np.array([X,Y,Z]).T)
-        X_rot, Y_rot, Z_rot = XYZ_rot[:,0].reshape(old_shape),\
-                              XYZ_rot[:,1].reshape(old_shape),\
-                              XYZ_rot[:,2].reshape(old_shape)
+        XYZ_rot = r.apply(np.array([X, Y, Z]).T)
+        X_rot, Y_rot, Z_rot = (XYZ_rot[:, 0].reshape(old_shape),
+                               XYZ_rot[:, 1].reshape(old_shape),
+                               XYZ_rot[:, 2].reshape(old_shape))
         # Plot
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ax.plot_wireframe(X_rot, Y_rot, Z_rot, alpha=0.3, color='r')
         ax.view_init(elev=-140., azim=-55.)
-        ## x,y of ellipse is not same as x,y of covariance matrix.
-        ##Swapped because x and y correspond to N and E respectively in covariance matrix.
+        #  x,y of ellipse is not same as x,y of covariance matrix.
+        # Swapped because x and y correspond to N and E respectively in
+        # covariance matrix.
         ax.set_xlabel('y(E)')
         ax.set_ylabel('x(N)')
         ax.set_zlabel('z(Depth)')
