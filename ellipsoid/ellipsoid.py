@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-# import math as m
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 eps = np.finfo(float).eps
 
@@ -58,6 +58,27 @@ class Ellipsoid:
         s += ')'
         return s
 
+    def __eq__(self, other):
+        """
+        Returns true if two Ellipsoids are equal
+        """
+        if not abs((self.semi_major_axis_length - other.semi_major_axis_length)
+                   / self.semi_major_axis_length) < 1e-5:
+            return False
+        if not abs((self.semi_minor_axis_length - other.semi_minor_axis_length)
+                   / self.semi_minor_axis_length) < 1e-2 :
+            return False
+        if not abs((self.semi_intermediate_axis_length -
+                    other.semi_intermediate_axis_length) /
+                        abs(self.semi_intermediate_axis_length)) < 1e-2:
+            return False
+        if not self.center == other.center:
+            return False
+        if not np.equal(self.__rotmat().as_rotvec().round(5),
+                        other.__rotmat().as_rotvec().round(5)).all():
+            return False
+        return True
+
     def _error_test(self):
         """
         Test for invalid parameters
@@ -99,7 +120,8 @@ class Ellipsoid:
 
         # EIGH() returns eig fast and sorted if input matrix symmetric
         evals, evecs = np.linalg.eigh(cov)
-        assert np.all(evals > 0), 'Covariance matrix is not positive definite'
+        assert np.all(evals > 0),\
+            f'Covariance matrix {cov} is not positive definite'
         # assert np.allclose(np.linalg.norm(evecs),[1.,1.,1.]),
         #                    'Eigenvectors are not unit length'
 
@@ -151,7 +173,7 @@ class Ellipsoid:
         :param evals: eigenvalues sorted from smallest to largest [1x3]
         :param evecs: corresponding eigenvectors (1/row)
         """
-        # Why all these specific cases resulting in taking evecs[:,1]
+        # WCC: Why all these specific cases resulting in taking evecs[:,1]
         # (intermediate axis) instead of just taking evecs[:,2]?
         if not cov[0, 1] == 0 and evals[2] <= cov[2, 2]:     # XY rotation
             return evecs[:, 1]
@@ -164,15 +186,17 @@ class Ellipsoid:
     @staticmethod
     def _calc_rotation_angles(X2, X3, Y3, debug=False):
         """
-        Calculate rotation angles from semi-major & -minor vector components
+        Calculate rotation angles from semi-major & -minor components
+        
+        WCC: PLEASE EXPLAIN HOW THIS WORKS.  CAN IT BE DONE MORE SIMPLY USING
+        scipy.spatial.transform.Rotation?
+        WCC: WHY IS PLUNGE ALWAYS NEGATIVE?
         """
-        # Should this be redone using atan2?
-#         if X3 == 1:
-#             azimuth = 90
         if X2 == 0:
             azimuth = 0
         else:
             azimuth = np.degrees(np.arcsin(X2 / np.sqrt(1 - X3**2)))
+        # WCC: WHY IS PLUNGE ALWAYS NEGATIVE???????
         plunge = np.degrees(np.arcsin(-X3))
         if Y3 == 0:
             rotation = 0
@@ -187,7 +211,7 @@ class Ellipsoid:
 
         Internal because x, y and z are in ConfidenceEllipsoid order
 
-        ARE YOU SURE?  I THOUGHT THEY WERE y, x, z ORDER?"""
+        WCC: ARE YOU SURE?  I THOUGHT THEY WERE y, x, z ORDER?"""
         eigvals = (self.semi_major_axis_length**2,
                    self.semi_minor_axis_length**2,
                    self.semi_intermediate_axis_length**2)
@@ -217,67 +241,68 @@ class Ellipsoid:
 
     @staticmethod
     def __ROT_RH_azi(azi):
-        """Right handed rotation matrix for "azimuth" in RADIANS"""
+        """
+        Right handed rotation matrix for "azimuth" in RADIANS
+        """
         c_azi, s_azi = np.cos(azi), np.sin(azi)
         r = R.from_dcm([[c_azi, -s_azi, 0],
                         [s_azi, c_azi, 0],
                         [0, 0, 1]])
         RX = r.as_dcm()
         return RX
+        # return R.from_euler('z', azi).as_dcm()  # WCC: returns the same result?
 
     @staticmethod
     def __ROT_RH_plunge(plunge):
-        """Right handed rotation matrix for "plunge" in RADIANS"""
+        """
+        Right handed rotation matrix for "plunge" in RADIANS
+        """
         c_plunge, s_plunge = np.cos(plunge), np.sin(plunge)
         r = R.from_dcm([[c_plunge, 0, s_plunge],
                        [0, 1, 0],
                        [-s_plunge, 0, c_plunge]])
         RY = r.as_dcm()
         return RY
+        # return R.from_euler('x', plunge).as_dcm()  # WCC: returns the same result?
 
     @staticmethod
     def __ROT_RH_rot(rot):
-        """Right handed rotation matrix for "rotation" in RADIANS"""
+        """
+        Right handed rotation matrix for "rotation" in RADIANS
+        """
         c_rot, s_rot = np.cos(rot), np.sin(rot)
         r = R.from_dcm([[1, 0, 0],
                        [0, c_rot, -s_rot],
                        [0, s_rot, c_rot]])
         RZ = r.as_dcm()
         return RZ
+        # return R.from_euler('y', rot).as_dcm()  # WCC: returns the same result?
 
     def to_covariance(self, debug=False):
-        """Return covariance matrix corresponding to ellipsoid
+        """
+        Return covariance matrix corresponding to ellipsoid
 
-        Uses eigenvals*cov=eigenvecs*cov
+        Uses eigenvals * cov = eigenvecs * cov
         """
         eigvals, eigvecs = self.__to_eigen()
-        # cov = np.matmul(eigvecs , np.diag(eigvals) , np.linalg.inv(eigvecs))
-        # cov_symm = (cov + cov.transpose())/2
         cov = eigvecs * np.diag(eigvals) * np.linalg.inv(eigvecs)
-
-        # THIS COMMENT IS WRITTEN FOR 2D!!!
-        # Convert to standard coordinates (x=E, y=N). Transform covariance
-        # matrix to CovarianceEllipse coordinates (x=N,y=E)
-        # temp = cov(0, 1)   # old c_xz, becomes c_yz
-        # cov[0, 2], cov[2, 0] = cov[1, 2], cov[1, 2]
-        # cov[1, 2], cov[2, 1] = temp, temp
-        # temp = cov[0, 0]  # old c_xx, becomes c_yy
-        # cov[0, 0] = cov[1, 1]
-        # cov[1, 1] = temp
-
         return cov
 
     def to_XYEllipse(self, debug=False):
         """
         Return XY-ellipse corresponding to Ellipsoid
+
+        Should probably make a generic to_Ellipse(), allowing one
+        to extract the Ellipse viewed from any angle. to_XYEllipse()
+        would call to_Ellipse() from the appropriate view angle
         """
         cov = self.to_covariance()
         # print(cov)
         errors = np.sqrt(np.diag(cov))
         cross_covs = cov[0, 1], cov[0, 2], cov[1, 2]
-        # print(errors,cross_covs)
         cov_xy = [[errors[0]**2, cross_covs[0]],
                   [cross_covs[0], errors[1]**2]]
+        # cov_xy = cov[0:1,0:1]  # WCC: MORE COMPACT, SAME ANSWER?
 
         evals, evecs = np.linalg.eig(cov_xy)
         sort_indices = np.argsort(evals)[::-1]
@@ -299,15 +324,21 @@ class Ellipsoid:
     #    print('to_XYEllipse is not yet written!')
 
     def to_uncerts(self, debug=False):
-        """Return xyz and covariances corresponding to ellipsoid """
+        """
+        Return errors and covariances corresponding to ellipsoid
+        
+        :returns errors, cross_covs:
+        :rtype errors: 3-tuple of xerr, yerr, zerr errors
+        :rtype cross_covs: 3-tuple of c_xy, c_xz, c_yz
+        """
         cov = self.to_covariance()
         errors = np.sqrt(np.diag(cov))
         cross_covs = cov[0, 1], cov[0, 2], cov[1, 2]
         return errors, cross_covs
 
-    def check_equi_covarinace(self, debug=False):
+    def check_equi_covariance(self, debug=False):
         """
-        check equaivalne between from/to covariance
+        check equaivalnce between from/to covariance
         """
         cov = self.to_covariance()
         ell = self.from_covariance(cov)
@@ -317,72 +348,11 @@ class Ellipsoid:
 
     def check_equi_uncerts(self, debug=False):
         """
-        check equaivalne between from/to uncertainties
+        check equivalence between from/to uncertainties
         """
         errors, cross_covs = self.to_uncerts()
         el = self.from_uncerts(errors, cross_covs)
         return el
-
-    def plot_old(self, title=None, debug=False):
-        """
-        Plots ellipsoid
-
-        https://stackoverflow.com/questions/7819498/plotting-ellipsoid-
-              with-matplotlib
-        """
-        import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D
-
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-
-        # Make set of spherical angles to draw our ellipsoid
-        n_points = 100
-        theta = np.linspace(0, 2*np.pi, n_points)
-        phi = np.linspace(0, np.pi, n_points)
-
-        # Get ellipsoid parameters
-        eigvals, eigvecs = self.__to_eigen()
-        cov1 = self.to_covariance()
-        eigvals, eigvecs = np.linalg.eig(cov1)
-
-        # Width, height and depth of ellipsoid
-        # rx, ry, rz = (self.semi_major_axis_length,
-        #           self.semi_minor_axis_length,
-        #           self.semi_intermediate_axis_length)
-
-        rx, ry, rz = eigvals
-        # print(rx,ry,rz)
-
-        # Get the xyz points for plotting
-        # Cartesian coordinates that correspond to the spherical angles:
-        X = rx * np.outer(np.cos(theta), np.sin(phi))
-        Y = ry * np.outer(np.sin(theta), np.sin(phi))
-        Z = rz * np.outer(np.ones(np.size(theta)), np.cos(phi))
-
-        # Rotate ellipsoid
-        old_shape = X.shape
-        X, Y, Z = X.flatten(), Y.flatten(), Z.flatten()
-        X, Y, Z = np.matmul(eigvecs, np.array([X, Y, Z]))
-        # print(X.shape, Y.shape, Z.shape)
-        X, Y, Z = (X.reshape(old_shape), Y.reshape(old_shape),
-                   Z.reshape(old_shape))
-        # print(X.shape, Y.shape, Z.shape)
-
-        # Add in offsets, flipping X and Y to correspond to "external"
-        # convention
-        # X = Y + self.center[0]
-        # Y = X + self.center[1]
-        # Z = Z + self.center[2]
-
-        # Plot
-        ax.plot_wireframe(X, Y, Z, alpha=0.3, color='r')
-        plt.xlabel('x(E)')
-        plt.ylabel('y(N)')
-        if title:
-            plt.title(title)
-        _set_axes_equal(ax)
-        plt.show()
 
     def plot(self, title=None, debug=False):
         """
@@ -391,9 +361,6 @@ class Ellipsoid:
         https://stackoverflow.com/questions/7819498/plotting-ellipsoid-
               with-matplotlib
         """
-        import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D
-
         # Make set of spherical angles to draw our ellipsoid
         n_points = 100
         theta = np.linspace(0, 2 * np.pi, n_points)
