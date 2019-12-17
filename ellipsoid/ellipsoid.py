@@ -174,7 +174,12 @@ class Ellipsoid:
         :param evecs: corresponding eigenvectors (1/row)
         """
         # WCC: Why all these specific cases resulting in taking evecs[:,1]
-        # (intermediate axis) instead of just taking evecs[:,2]?
+        #(intermediate axis) instead of just taking evecs[:,2]?
+        # X1,X2,X3 is not always along the semi major axis, it is along the rotated axis. So if there is xy rotation
+        #(in that case cov_xy is not zero) but I have a z axis length greater than rotated x, it will swap x and z and 
+        #the returned X1,X2,X3 will be worng.
+        #for example: cov = 2,2,3,3.99,0,0, eigen values are 2.83,0,3. But eigh() returns in the order 0,2.83,3.
+        #If I take simple evecs[;,2] in all cases , Here X3 will be along 3, but it should have along 2.83.  
         if not cov[0, 1] == 0 and evals[2] <= cov[2, 2]:     # XY rotation
             return evecs[:, 1]
         elif not cov[0, 2] == 0 and evals[2] <= cov[1, 1]:   # XZ rotation
@@ -191,27 +196,37 @@ class Ellipsoid:
         WCC: PLEASE EXPLAIN HOW THIS WORKS.  CAN IT BE DONE MORE SIMPLY USING
         scipy.spatial.transform.Rotation?
         WCC: WHY IS PLUNGE ALWAYS NEGATIVE?
+
+        The angles are calculated according to Tait Bryan Wikipedia page(https://en.wikipedia.org/wiki/Euler_angles) where plunge was 
+        negative rotation about y axis. So plunge was negative. But I think it is according to the left hand rule whereas we have 
+        calculated the eigvector matrix according to Right hand rule. So I changed the signs of azimuth and plunge. I am not sure 
+        about rotation angle because its range is (0-180)deg. So it cant be negative. But in some cases, it returns negative value.
+        Range of azimuth and plunge is (-180 to 180)
         """
+        r = R.from_rotvec([
+            [0,0,np.arcsin(-X2 / np.sqrt(1 - X3**2))],
+            [0,np.arcsin(X3),0],
+            [np.arcsin(Y3 / np.sqrt(1 - X3**2)),0,0]])
+        array_angles=r.as_euler('ZYX',degrees=True)
+        #print(array_angles)
         if X2 == 0:
             azimuth = 0
         else:
-            azimuth = np.degrees(np.arcsin(X2 / np.sqrt(1 - X3**2)))
-        # WCC: WHY IS PLUNGE ALWAYS NEGATIVE???????
-        plunge = np.degrees(np.arcsin(-X3))
+            azimuth = array_angles[0,0]
         if Y3 == 0:
             rotation = 0
         else:
-            rotation = np.degrees(np.arcsin(Y3 / np.sqrt(1 - X3**2)))
-        if debug:
-            print(azimuth, plunge, rotation)
+            rotation = array_angles[2,2]
+        plunge = array_angles[1,1]
         return azimuth, plunge, rotation
-
     def __to_eigen(self, debug=False):
         """Return eigenvector matrix corresponding to ellipsoid
 
         Internal because x, y and z are in ConfidenceEllipsoid order
 
-        WCC: ARE YOU SURE?  I THOUGHT THEY WERE y, x, z ORDER?"""
+        WCC: ARE YOU SURE?  I THOUGHT THEY WERE y, x, z ORDER?
+        I am not sure. But seems like it is working with this order.
+        """
         eigvals = (self.semi_major_axis_length**2,
                    self.semi_minor_axis_length**2,
                    self.semi_intermediate_axis_length**2)
@@ -221,18 +236,17 @@ class Ellipsoid:
             self.major_axis_plunge))
         RX_rot = Ellipsoid.__ROT_RH_rot(np.radians(self.major_axis_rotation))
 
-        # eigvecs = np.matmul(RZ_azi , RY_plunge , RX_rot)
-        eigvecs = RZ_azi * RY_plunge * RX_rot
+        eigvecs1 = np.matmul(RZ_azi , RY_plunge) 
+        eigvecs = np.matmul(eigvecs1, RX_rot)
 
-        # r = self.__rotmat()
-        # eigvecs  = r.as_dcm()
-        # print(eigvecs)
+        inv_eigvecs = np.linalg.inv(eigvecs)
 
-        return eigvals, eigvecs
+        return eigvals, eigvecs, inv_eigvecs
 
     def __rotmat(self):
         """
         Return rotation matrix of ellipsoid
+        ORDER SHOULD BE ZYX I think
         """
         r = R.from_euler('z', self.major_axis_azimuth, degrees=True) *\
             R.from_euler('x', self.major_axis_plunge, degrees=True) *\
@@ -244,39 +258,27 @@ class Ellipsoid:
         """
         Right handed rotation matrix for "azimuth" in RADIANS
         """
-        c_azi, s_azi = np.cos(azi), np.sin(azi)
-        r = R.from_dcm([[c_azi, -s_azi, 0],
-                        [s_azi, c_azi, 0],
-                        [0, 0, 1]])
-        RX = r.as_dcm()
-        return RX
-        # return R.from_euler('z', azi).as_dcm()  # WCC: returns the same result?
+        RZ = R.from_euler('z', azi).as_dcm()
+        return RZ
+        # return R.from_euler('z', azi).as_dcm()  # WCC: returns the same result? yes
 
     @staticmethod
     def __ROT_RH_plunge(plunge):
         """
         Right handed rotation matrix for "plunge" in RADIANS
         """
-        c_plunge, s_plunge = np.cos(plunge), np.sin(plunge)
-        r = R.from_dcm([[c_plunge, 0, s_plunge],
-                       [0, 1, 0],
-                       [-s_plunge, 0, c_plunge]])
-        RY = r.as_dcm()
+        RY = R.from_euler('y', plunge).as_dcm()
         return RY
-        # return R.from_euler('x', plunge).as_dcm()  # WCC: returns the same result?
+        # return R.from_euler('x', plunge).as_dcm()  # WCC: returns the same result? yes IF axis is y 
 
     @staticmethod
     def __ROT_RH_rot(rot):
         """
         Right handed rotation matrix for "rotation" in RADIANS
         """
-        c_rot, s_rot = np.cos(rot), np.sin(rot)
-        r = R.from_dcm([[1, 0, 0],
-                       [0, c_rot, -s_rot],
-                       [0, s_rot, c_rot]])
-        RZ = r.as_dcm()
-        return RZ
-        # return R.from_euler('y', rot).as_dcm()  # WCC: returns the same result?
+        RX = R.from_euler('x', rot).as_dcm()
+        return RX
+        # return R.from_euler('y', rot).as_dcm()  # WCC: returns the same result? yes IF axis is x
 
     def to_covariance(self, debug=False):
         """
@@ -284,8 +286,10 @@ class Ellipsoid:
 
         Uses eigenvals * cov = eigenvecs * cov
         """
-        eigvals, eigvecs = self.__to_eigen()
-        cov = eigvecs * np.diag(eigvals) * np.linalg.inv(eigvecs)
+        eigvals, eigvecs, inv_eigvecs = self.__to_eigen()
+        #cov = eigvecs * np.diag(eigvals) * np.linalg.inv(eigvecs)
+        cov1 = np.matmul(eigvecs,np.diag(eigvals))
+        cov = np.matmul(cov1,inv_eigvecs)
         return cov
 
     def to_XYEllipse(self, debug=False):

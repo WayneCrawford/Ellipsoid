@@ -31,15 +31,15 @@ class TestEllipsoidMethods(unittest.TestCase):
         """
         maj, min, med = 4, 1, 3
         self.assertEqual(Ellipsoid.from_uncerts((1, 4, 3)),
-                         Ellipsoid(4, 1, 3, 90, 0, 0))
+                         Ellipsoid(4, 1, 3, -90, 0, 0))
         self.assertEqual(Ellipsoid.from_uncerts((min, maj, med)),
-                         Ellipsoid(maj, min, med, 90, 0, 0))
+                         Ellipsoid(maj, min, med, -90, 0, 0))
         self.assertEqual(Ellipsoid.from_uncerts((min, med, maj)),
-                         Ellipsoid(maj, min, med, 0, -90, 0))
+                         Ellipsoid(maj, min, med, 0, 90, 0))
         self.assertEqual(Ellipsoid.from_uncerts((med, maj, min)),
-                         Ellipsoid(maj, min, med, 90, 0, 90))
+                         Ellipsoid(maj, min, med, -90, 0, 90))
         self.assertEqual(Ellipsoid.from_uncerts((med, min, maj)),
-                         Ellipsoid(maj, min, med, 0, -90, 0))
+                         Ellipsoid(maj, min, med, 0, 90, 0))
         self.assertEqual(Ellipsoid.from_uncerts((maj, min, med)),
                          Ellipsoid(maj, min, med, 0, 0, 0))
         self.assertEqual(Ellipsoid.from_uncerts((maj, med, min)),
@@ -85,7 +85,7 @@ class TestEllipsoidMethods(unittest.TestCase):
         self.assertEqual(
             Ellipsoid.from_uncerts((maj, med, min), (maj * med * factor, 0, 0)),
             Ellipsoid(np.sqrt(maj**2 + med**2), 0.00235, min, 
-                      -np.degrees(np.arctan2(med, maj)), 0, 0))
+                      np.degrees(np.arctan2(med, maj)), 0, 0))
 
     def test_fail(self):
         """
@@ -109,9 +109,12 @@ class TestEllipsoidMethods(unittest.TestCase):
         min, med, maj = 1, 2, 3
         rng = np.random.default_rng()
         azi, plunge, rot = rng.integers(1, 90, size=3)
+        #azi, plunge, rot = 0, 90 , 0
         e = Ellipsoid(maj, min, med, azi, plunge, rot)  
         cov = e.to_covariance()
+        #print(cov)
         self.assertEqual(e, Ellipsoid.from_covariance(cov))
+
 
     def test_to_from_uncerts(self):
         """
