@@ -4,6 +4,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from ellipse import Ellipse, _rot_cw
 
 eps = np.finfo(float).eps
 
@@ -301,17 +302,18 @@ class Ellipsoid:
         would call to_Ellipse() from the appropriate view angle
         """
         cov = self.to_covariance()
-        # print(cov)
-        errors = np.sqrt(np.diag(cov))
-        cross_covs = cov[0, 1], cov[0, 2], cov[1, 2]
-        cov_xy = [[errors[0]**2, cross_covs[0]],
-                  [cross_covs[0], errors[1]**2]]
-        # cov_xy = cov[0:1,0:1]  # WCC: MORE COMPACT, SAME ANSWER?
-
+        #print(cov)
+        #errors = np.sqrt(np.diag(cov))
+        #cross_covs = cov[0, 1], cov[0, 2], cov[1, 2]
+        cov_xy = [[cov[0,0], cov[0,1]],
+                  [cov[1,0], cov[1,1]]]
+        #cov_xy = cov[0:1,0:1]  # WCC: MORE COMPACT, SAME ANSWER?
+        #print(cov_xy)
         evals, evecs = np.linalg.eig(cov_xy)
         sort_indices = np.argsort(evals)[::-1]
         a, b = np.sqrt(evals[sort_indices[0]]), np.sqrt(evals[sort_indices[1]])
         x_v1, y_v1 = evecs[:, 0]
+        #print(x_v1, y_v1)
         if y_v1 == 0.:
             theta = 90.
         else:
@@ -358,7 +360,7 @@ class Ellipsoid:
         el = self.from_uncerts(errors, cross_covs)
         return el
 
-    def plot(self, title=None, debug=False):
+    def plot(self, title=None, show=False, debug=False):
         """
         Plots ellipsoid viewed from -z, corresponding to view from above
 
@@ -388,7 +390,6 @@ class Ellipsoid:
         # Plot
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_wireframe(X_rot, Y_rot, Z_rot, alpha=0.3, color='r')
         ax.view_init(elev=-140., azim=-55.)
         #  x,y of ellipse is not same as x,y of covariance matrix.
         # Swapped because x and y correspond to N and E respectively in
@@ -399,7 +400,57 @@ class Ellipsoid:
         if title:
             plt.title(title)
         _set_axes_equal(ax)
-        plt.show()
+        if show:
+                plt.show()
+
+    def plot_ellipse(self,title=None, show=False, debug=False):
+        """
+        Plot the XY projection ellipse correspoding to the ellipsoid
+        """
+        fig = plt.figure(figsize=plt.figaspect(0.4))
+        ax = fig.add_subplot(1, 2, 1, projection='3d')
+        n_points = 100
+        theta = np.linspace(0, 2 * np.pi, n_points)
+        phi = np.linspace(0, np.pi, n_points)
+
+        # Get the xyz points for plotting
+        # Cartesian coordinates that correspond to the spherical angles:
+        X = self.semi_minor_axis_length * np.outer(np.cos(theta), np.sin(phi))
+        Y = self.semi_major_axis_length * np.outer(np.sin(theta), np.sin(phi))
+        Z = self.semi_intermediate_axis_length *\
+            np.outer(np.ones(np.size(theta)), np.cos(phi))
+
+        old_shape = X.shape
+        X, Y, Z = X.flatten(), Y.flatten(), Z.flatten()
+        r = self.__rotmat()
+        # Rotate ellipsoid
+        XYZ_rot = r.apply(np.array([X, Y, Z]).T)
+        X_rot, Y_rot, Z_rot = (XYZ_rot[:, 0].reshape(old_shape),
+                               XYZ_rot[:, 1].reshape(old_shape),
+                               XYZ_rot[:, 2].reshape(old_shape))
+
+        ax.plot_wireframe(X_rot, Y_rot, Z_rot, alpha=0.3, color='r')
+        ax.set_xlabel('y(E)')
+        ax.set_ylabel('x(N)')
+        ax.set_zlabel('z(Depth)')
+        ax.view_init(elev=90., azim=0.)
+        ############################
+        ax = fig.add_subplot(1, 2, 2, aspect='equal')
+        a,b,theta = self.to_XYEllipse()
+        npts=100
+        t = np.linspace(0, 2 * np.pi, npts)
+        ell = np.array([b * np.sin(t), a * np.cos(t)])
+        r_rot = _rot_cw(theta)
+        ell_rot = np.zeros((2, ell.shape[1]))
+        for i in range(ell.shape[1]):
+            ell_rot[:, i] = np.dot(r_rot, ell[:, i])
+        ax.plot(ell_rot[0,:],ell_rot[1,:])
+        ax.set_xlabel('x(N)')
+        ax.set_ylabel('y(E)')
+
+        ax.plot()
+        if show:
+                plt.show()
 
 
 def _set_axes_radius(ax, origin, radius):
