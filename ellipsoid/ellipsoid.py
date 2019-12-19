@@ -4,7 +4,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from ellipse import Ellipse, _rot_cw
+from .ellipse import Ellipse, _rot_cw
 
 eps = np.finfo(float).eps
 
@@ -360,12 +360,13 @@ class Ellipsoid:
         el = self.from_uncerts(errors, cross_covs)
         return el
 
-    def plot(self, title=None, show=False, debug=False):
+    def plot(self, title=None, show=False, debug=False, viewpt=(-140,-55)):
         """
         Plots ellipsoid viewed from -z, corresponding to view from above
 
         https://stackoverflow.com/questions/7819498/plotting-ellipsoid-
               with-matplotlib
+        :parm viewpt: viewpoint (azimuth, elevation)
         """
         # Make set of spherical angles to draw our ellipsoid
         n_points = 100
@@ -390,10 +391,11 @@ class Ellipsoid:
         # Plot
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.view_init(elev=-140., azim=-55.)
+        ax.view_init(azim=viewpt[0], elev=viewpt[1])
         #  x,y of ellipse is not same as x,y of covariance matrix.
         # Swapped because x and y correspond to N and E respectively in
         # covariance matrix.
+        ax.plot_wireframe(X_rot, Y_rot, Z_rot, alpha=0.3, color='r')
         ax.set_xlabel('y(E)')
         ax.set_ylabel('x(N)')
         ax.set_zlabel('z(Depth)')
