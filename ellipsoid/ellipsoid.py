@@ -4,7 +4,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from .ellipse import Ellipse, _rot_cw
+from .ellipse import Ellipse
 
 eps = np.finfo(float).eps
 
@@ -102,7 +102,7 @@ class Ellipsoid:
 
         Inputs:
             cov: 3x3 covariance matrix (indices 0,1,2 correspond to
-                 x,y,z.  For geographic data, x=N, y=E,and Z=depth (to view
+                 x,y,z.  For geographic data, N, E,and Z=depth (to view
                  from above, use an elevation < 0))
             center: center of the ellipse (0,0,0)
 
@@ -153,7 +153,7 @@ class Ellipsoid:
 
         Call as e=ellipsoid.from_uncerts(errors, cross_covs, center)
 
-        x=N, y=E, z=Depth
+        N, E, Z=Depth
 
         Inputs:
             errors:      (x, y, z) errors (m)
@@ -296,10 +296,6 @@ class Ellipsoid:
     def to_XYEllipse(self, debug=False):
         """
         Return XY-ellipse corresponding to Ellipsoid
-
-        Should probably make a generic to_Ellipse(), allowing one
-        to extract the Ellipse viewed from any angle. to_XYEllipse()
-        would call to_Ellipse() from the appropriate view angle
         """
         cov = self.to_covariance()
         #print(cov)
@@ -319,15 +315,6 @@ class Ellipsoid:
         else:
             theta = (np.degrees(np.arctan((x_v1) / (y_v1))) + 180) % 180
         return a, b, theta
-
-    # def to_XYEllipse(self, debug=False):
-    #    """Return XY-plane Ellipse corresponding to Ellipsoid
-    #
-    #    Should probably make a generic to_Ellipse, allowing one
-    #    to extract the Ellipse viewed from any angle, then to_XYEllipse
-    #    would call this code from the appropriate view angle
-    #    """
-    #    print('to_XYEllipse is not yet written!')
 
     def to_uncerts(self, debug=False):
         """
@@ -375,85 +362,32 @@ class Ellipsoid:
 
         # Get the xyz points for plotting
         # Cartesian coordinates that correspond to the spherical angles:
-        X = self.semi_minor_axis_length * np.outer(np.cos(theta), np.sin(phi))
-        Y = self.semi_major_axis_length * np.outer(np.sin(theta), np.sin(phi))
+        N = self.semi_minor_axis_length * np.outer(np.cos(theta), np.sin(phi))
+        E = self.semi_major_axis_length * np.outer(np.sin(theta), np.sin(phi))
         Z = self.semi_intermediate_axis_length *\
             np.outer(np.ones(np.size(theta)), np.cos(phi))
 
-        old_shape = X.shape
-        X, Y, Z = X.flatten(), Y.flatten(), Z.flatten()
+        old_shape = N.shape
+        N, E, Z = N.flatten(), E.flatten(), Z.flatten()
         r = self.__rotmat()
         # Rotate ellipsoid
-        XYZ_rot = r.apply(np.array([X, Y, Z]).T)
-        X_rot, Y_rot, Z_rot = (XYZ_rot[:, 0].reshape(old_shape),
-                               XYZ_rot[:, 1].reshape(old_shape),
-                               XYZ_rot[:, 2].reshape(old_shape))
+        NEZ_rot = r.apply(np.array([N, E, Z]).T)
+        N_rot, E_rot, Z_rot = (NEZ_rot[:, 0].reshape(old_shape),
+                               NEZ_rot[:, 1].reshape(old_shape),
+                               NEZ_rot[:, 2].reshape(old_shape))
         # Plot
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ax.view_init(azim=viewpt[0], elev=viewpt[1])
-        #  x,y of ellipse is not same as x,y of covariance matrix.
-        # Swapped because x and y correspond to N and E respectively in
-        # covariance matrix.
-        ax.plot_wireframe(X_rot, Y_rot, Z_rot, alpha=0.3, color='r')
-        ax.set_xlabel('y(E)')
-        ax.set_ylabel('x(N)')
-        ax.set_zlabel('z(Depth)')
+        ax.plot_wireframe(E_rot, N_rot, Z_rot, alpha=0.3, color='r')
+        ax.set_xlabel('E')
+        ax.set_ylabel('N')
+        ax.set_zlabel('Z(Depth)')
         if title:
             plt.title(title)
         _set_axes_equal(ax)
         if show:
                 plt.show()
-
-    def plot_ellipse(self,title=None, show=False, debug=False):
-        """
-        Plot the XY projection ellipse correspoding to the ellipsoid
-        """
-        fig = plt.figure(figsize=plt.figaspect(0.4))
-        ax = fig.add_subplot(1, 2, 1, projection='3d')
-        n_points = 100
-        theta = np.linspace(0, 2 * np.pi, n_points)
-        phi = np.linspace(0, np.pi, n_points)
-
-        # Get the xyz points for plotting
-        # Cartesian coordinates that correspond to the spherical angles:
-        X = self.semi_minor_axis_length * np.outer(np.cos(theta), np.sin(phi))
-        Y = self.semi_major_axis_length * np.outer(np.sin(theta), np.sin(phi))
-        Z = self.semi_intermediate_axis_length *\
-            np.outer(np.ones(np.size(theta)), np.cos(phi))
-
-        old_shape = X.shape
-        X, Y, Z = X.flatten(), Y.flatten(), Z.flatten()
-        r = self.__rotmat()
-        # Rotate ellipsoid
-        XYZ_rot = r.apply(np.array([X, Y, Z]).T)
-        X_rot, Y_rot, Z_rot = (XYZ_rot[:, 0].reshape(old_shape),
-                               XYZ_rot[:, 1].reshape(old_shape),
-                               XYZ_rot[:, 2].reshape(old_shape))
-
-        ax.plot_wireframe(X_rot, Y_rot, Z_rot, alpha=0.3, color='r')
-        ax.set_xlabel('y(E)')
-        ax.set_ylabel('x(N)')
-        ax.set_zlabel('z(Depth)')
-        ax.view_init(elev=90., azim=0.)
-        ############################
-        ax = fig.add_subplot(1, 2, 2, aspect='equal')
-        a,b,theta = self.to_XYEllipse()
-        npts=100
-        t = np.linspace(0, 2 * np.pi, npts)
-        ell = np.array([b * np.sin(t), a * np.cos(t)])
-        r_rot = _rot_cw(theta)
-        ell_rot = np.zeros((2, ell.shape[1]))
-        for i in range(ell.shape[1]):
-            ell_rot[:, i] = np.dot(r_rot, ell[:, i])
-        ax.plot(ell_rot[0,:],ell_rot[1,:])
-        ax.set_xlabel('x(N)')
-        ax.set_ylabel('y(E)')
-
-        ax.plot()
-        if show:
-                plt.show()
-
 
 def _set_axes_radius(ax, origin, radius):
     ax.set_xlim3d([origin[0] - radius, origin[0] + radius])
