@@ -1,8 +1,0 @@
-MANIFEST.in
-README.rst
-setup.py
-ellipsoid.egg-info/PKG-INFO
-ellipsoid.egg-info/SOURCES.txt
-ellipsoid.egg-info/dependency_links.txt
-ellipsoid.egg-info/requires.txt
-ellipsoid.egg-info/top_level.txt
