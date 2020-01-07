@@ -1,1 +1,1 @@
-name = "ellipsoid"
+__all__ = ['ellipsoid', 'ellipse']
