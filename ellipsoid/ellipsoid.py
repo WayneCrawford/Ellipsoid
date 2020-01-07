@@ -318,32 +318,32 @@ class Ellipsoid:
         cov = np.matmul(cov1, inv_eigvecs)
         return cov
 
-    def to_XYEllipse(self, debug=False):
-        """
-        Return XY-ellipse corresponding to Ellipsoid
+#     def to_XYEllipse(self, debug=False):
+#         """
+#         Return XY-ellipse corresponding to Ellipsoid
+#         
+#         OLD, returns bad value for Ellipse class
+#         """
+#         cov = self.to_covariance()
+#         # print(cov)
+#         # errors = np.sqrt(np.diag(cov))
+#         # cross_covs = cov[0, 1], cov[0, 2], cov[1, 2]
+#         cov_xy = [[cov[0, 0], cov[0, 1]],
+#                   [cov[1, 0], cov[1, 1]]]
+#         # cov_xy = cov[0:1,0:1]  # WCC: MORE COMPACT, SAME ANSWER?
+#         # print(cov_xy)
+#         evals, evecs = np.linalg.eig(cov_xy)
+#         sort_indices = np.argsort(evals)[::-1]
+#         a, b = np.sqrt(evals[sort_indices[0]]), np.sqrt(evals[sort_indices[1]])
+#         x_v1, y_v1 = evecs[:, 0]
+#         # print(x_v1, y_v1)
+#         if y_v1 == 0.:
+#             theta = 90.
+#         else:
+#             theta = (np.degrees(np.arctan((x_v1) / (y_v1))) + 180) % 180
+#         return a, b, theta
         
-        OLD, returns bad value for Ellipse class
-        """
-        cov = self.to_covariance()
-        # print(cov)
-        # errors = np.sqrt(np.diag(cov))
-        # cross_covs = cov[0, 1], cov[0, 2], cov[1, 2]
-        cov_xy = [[cov[0, 0], cov[0, 1]],
-                  [cov[1, 0], cov[1, 1]]]
-        # cov_xy = cov[0:1,0:1]  # WCC: MORE COMPACT, SAME ANSWER?
-        # print(cov_xy)
-        evals, evecs = np.linalg.eig(cov_xy)
-        sort_indices = np.argsort(evals)[::-1]
-        a, b = np.sqrt(evals[sort_indices[0]]), np.sqrt(evals[sort_indices[1]])
-        x_v1, y_v1 = evecs[:, 0]
-        # print(x_v1, y_v1)
-        if y_v1 == 0.:
-            theta = 90.
-        else:
-            theta = (np.degrees(np.arctan((x_v1) / (y_v1))) + 180) % 180
-        return a, b, theta
-        
-    def to_NEEllipse(self, debug=False):
+    def to_Ellipse(self, debug=False):
         """
         Return NE-ellipse corresponding to Ellipsoid
         """
@@ -444,9 +444,9 @@ class Ellipsoid:
 #         N_rot, E_rot, Z_rot = (NEZ_rot[:, 0].reshape(old_shape),
 #                                NEZ_rot[:, 1].reshape(old_shape),
 #                                NEZ_rot[:, 2].reshape(old_shape))
-        N_rot = -XYZ_rot[:, 0].reshape(old_shape) + self.center(0) 
-        E_rot = -XYZ_rot[:, 1].reshape(old_shape) + self.center(1)
-        Z_rot = -XYZ_rot[:, 2].reshape(old_shape) + self.center(2)
+        N_rot = -XYZ_rot[:, 0].reshape(old_shape) + self.center[0] 
+        E_rot = -XYZ_rot[:, 1].reshape(old_shape) + self.center[1]
+        Z_rot = -XYZ_rot[:, 2].reshape(old_shape) + self.center[2]
         # Plot
         if not fig:
             fig = plt.figure(figsize=(3, 3), dpi=200)

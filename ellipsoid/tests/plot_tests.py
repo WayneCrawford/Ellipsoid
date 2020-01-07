@@ -53,7 +53,7 @@ def slugify(value):
 
 def _plot3D(el):
     """ Plot Ellipsoid and corresponding Ellipse in 3D """
-    xy_el = el.to_NEEllipse(el)
+    xy_el = el.to_Ellipse(el)
     title = el.__str__(as_ints=True) + ', ' + str(xy_el)
     print(title)
     fname = slugify(el.__str__(as_ints=True)) + '.png'
