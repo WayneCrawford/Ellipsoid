@@ -10,10 +10,10 @@ import pprint
 pp = pprint.PrettyPrinter()
 np.set_printoptions(precision=2, suppress=True)
 def main():
-    step = 30
-    for azi in np.arange(0, 90, step):
-        for plunge in np.arange(0, 90, step):
-            for rot in np.arange(0, 90, step):
+    step = 30.
+    for azi in np.arange(0, 91, step):
+        for plunge in np.arange(0, 91, step):
+            for rot in np.arange(0, 91, step):
                 print_tofrom_cov(Ellipsoid(3, 1, 2, azi, plunge, rot))
 #     print_tofrom_cov(Ellipsoid(3, 1, 2, 0, 0, 0))
 #     print_tofrom_cov(Ellipsoid(3, 1, 2, 0, 0, 90))
@@ -40,7 +40,7 @@ def print_tofrom_cov(el):
     # print(f'el =  {el}')
     cov = el.to_covariance()
     el2 = Ellipsoid.from_covariance(cov)
-    print(f'{el}   {el2}')
+    print(f'{el}   {el2} {el==el2}')
     # print(f'el2 = {el2}')
     # print('')
     if debug:

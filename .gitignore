@@ -1,2 +1,2 @@
-ellipsoid.egg-info/
-ellipsoid/__pycache__/
+ellipsoid.egg-info/**
+ellipsoid/__pycache__/**

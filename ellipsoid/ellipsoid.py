@@ -205,7 +205,6 @@ class Ellipsoid:
         https://www.visiondummy.com/2014/04/
                         geometric-interpretation-covariance-matrix/)
         """
-        debug = True
         eigvals, eigvecs = self._to_eigen()
         # cov1 = np.matmul(eigvecs, np.diag(eigvals))
         # cov = np.matmul(cov1, np.linalg.inv(eigvecs))
