@@ -364,7 +364,7 @@ class Ellipsoid:
         # print(x_v1, y_v1)
         theta = (np.degrees(np.arctan2(x_a, y_a))) % 180
         theta = 90 - theta
-        return Ellipse(a, b, theta)
+        return Ellipse(a, b, theta, self.center([1,0]))
 
     def to_uncerts(self, debug=False):
         """
