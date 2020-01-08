@@ -21,7 +21,7 @@ setuptools.setup(
     install_requires=[
           'obspy>=1.1',
           'numpy>=1.17',
-          'scipy>=1.3',
+          'scipy>=1.4',
           'matplotlib>3.0'
       ],
     python_requires='>=3.6',

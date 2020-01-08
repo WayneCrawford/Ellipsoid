@@ -108,12 +108,17 @@ class TestEllipsoidMethods(unittest.TestCase):
         """
         min, med, maj = 1, 2, 3
         rng = np.random.default_rng()
-        azi, plunge, rot = rng.integers(1, 90, size=3)
-        #azi, plunge, rot = 0, 90 , 0
-        e = Ellipsoid(maj, min, med, azi, plunge, rot)  
-        cov = e.to_covariance()
-        #print(cov)
-        self.assertEqual(e, Ellipsoid.from_covariance(cov))
+        # azi, plunge, rot = 0, 90 , 0
+        for i in range(5):
+            #azi, plunge, rot = rng.integers(1, 90, size=3)
+            azi = rng.integers(-90, 90)
+            plunge = rng.integers(0, 90)
+            rot = rng.integers(0, 90)
+            e = Ellipsoid(maj, min, med, azi, plunge, rot)
+            # print(e)
+            cov = e.to_covariance()
+            # print(cov)
+            self.assertEqual(e, Ellipsoid.from_covariance(cov))
 
 
     def test_to_from_uncerts(self):

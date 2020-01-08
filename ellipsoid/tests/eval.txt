@@ -1,0 +1,94 @@
+# Results of running rot_tests.py with different from_covariance codes
+"clean" is just a cleaned up version of "old"
+"clean2" is "clean" after simplifying selection of "X" and "Y"
+
+"*" means that the right result was returned
+
+orig:  0,   0,   0
+old:   0,   0,   0  *
+clean: 0,  -0,   0  *
+new:   0,   0,   0  *
+clean2:0,  -0,   0  *
+
+orig:   0,   0,  90
+old:   90,   0, -90
+clean:-90,  -0, -90
+new:  180,   0, -180
+clean2: 0,  -0, -90  *
+
+orig:  0,   90,   0
+old:   0,   90,   0 * + error messages (recovered with special cases)
+clean: 0,  -90,  0  *
+new:   0,   0, -90
+clean2: 0, -90,   0 *
+
+# Same cov as above
+orig:  90,  90,  90
+old:   0,   0, -0
+clean: 0,  -0, -0
+new: 180,   0, -180
+clean2: 0,  90,   0 *
+
+orig:   0,  90,  90
+old:  -90,   0,   0
+clean: 90,   0,   0
+new:  -90,   0, -90
+clean2: 0, -90,   0
+
+# Same cov as above
+orig   90,  90,   0
+old:  -90,   0,  -0
+clean: 90,  -0,  -0
+new:  -90,   0, -90
+clean2: 0, -90,   0
+
+orig:  90,   0,   0
+old:  -90,   0,   0 *
+clean: 90,  -0,   0 *
+new:   90,   0,   0 *
+clean2:90,  -0,   0 *
+
+orig:  90,   0,  90
+old:   -0,  -0,  90
+clean:  0,   0,  90
+new:  -90,  90,   0
+clean2:-90,  -0,  90 *
+
+# Result: _new, _old and _clean are bad.  _new and _old only give
+# good answers if there is no plunge or rotation
+#  _clean is as good as _old (once I add
+# error recovery) and a lot simpler. 
+
+# Further tests with _clean and random angles indicate a residual
+# sign problem
+el =  Ellipsoid(  3,   1,   2,  65,  65,  25)
+el2 = Ellipsoid(  3,   1,   2, -65, -65, -25)
+
+el =  Ellipsoid(  3,   1,   2,  -5,  35,  14)
+el2 = Ellipsoid(  3,   1,   2,   5, -35, -14)
+
+el =  Ellipsoid(  3,   1,   2,  64,   7,  29)
+el2 = Ellipsoid(  3,   1,   2, -64,  -7, -29)
+
+el =  Ellipsoid(  3,   1,   2, -65,  68,  81)
+el2 = Ellipsoid(  3,   1,   2,  65, -68,  81)
+
+el =  Ellipsoid(  3,   1,   2,  18,  18,  51)
+el2 = Ellipsoid(  3,   1,   2, -18, -18,  51)
+
+el =  Ellipsoid(  3,   1,   2, -21,  74,  50)
+el2 = Ellipsoid(  3,   1,   2,  21, -74,  50)
+
+el =  Ellipsoid(  3,   1,   2,  14,   6,  66)
+el2 = Ellipsoid(  3,   1,   2, -14,  -6,  66)
+
+el =  Ellipsoid(  3,   1,   2,  54,  69,  55)
+el2 = Ellipsoid(  3,   1,   2, -54, -69,  55)
+
+el =  Ellipsoid(  3,   1,   2, -35,  67,  59)
+el2 = Ellipsoid(  3,   1,   2, -35,  67,  59)
+
+el =  Ellipsoid(  3,   1,   2, -44,  18,   9)
+el2 = Ellipsoid(  3,   1,   2,  44, -18,   9)
+
+# _clean2 works for all but  90, 90, 0 (why?)
