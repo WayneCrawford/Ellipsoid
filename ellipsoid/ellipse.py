@@ -173,6 +173,29 @@ class Ellipse:
         s += ')'
         return s
 
+    def __eq__(self, other):
+        """
+        Returns true if two Ellipses are equal
+        
+        :param other: second Ellipse
+        :type other:  :class: `~ellipsoid.Ellipse`
+        :return: equal
+        :rtype: bool
+        """
+        eps=1e-5
+        if not abs((self.a - other.a) / self.a) < eps:
+            return False
+        if not abs((self.b - other.b) / self.b) < eps:
+            return False
+        if not self.x == other.x:
+            return False
+        if not self.y == other.y:
+            return False
+        theta_diff = (self.theta - other.theta) % 180
+        if not (abs(theta_diff) < eps or abs(theta_diff-180) < eps):
+            return False
+        return True
+
     def to_cov(self):
         """Convert to covariance matrix notation
 

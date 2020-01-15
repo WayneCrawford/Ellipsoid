@@ -6,43 +6,26 @@ Plotting tests to verify that ellipsoid and ellipse work correctly
 Also used to generate plots used in test_ellipsoid.py
 """
 import re
+import os.path
 # import numpy as np
 from ellipsoid.ellipsoid import Ellipsoid
 import matplotlib.pyplot as plt
 
 
 def main():
-    _plot3D(Ellipsoid(3, 1, 2, -45, 45, 0))
-
-    # N,E,Z = 3,1,2, aligned"
-    _plot3D(Ellipsoid(3, 1, 2, 0, 0, 0))
-
-    # N,E,Z = 3,2,1, aligned"
-    _plot3D(Ellipsoid(3, 1, 2, 0, 0, 90))
-
-    # N,E,Z = 2,1,3, aligned"
-    _plot3D(Ellipsoid(3, 1, 2, 0, 90, 0))
-
-    # N,E,Z = 1,2,3, aligned"
-    _plot3D(Ellipsoid(3, 1, 2, 0, 90, -90))
-
-     # Non-aligned
-    _plot3D(Ellipsoid(3, 1, 2, 30, 30, 0))
-
-    _plot3D(Ellipsoid(3, 1, 2, 30, 60, 0))
-   
-    _plot3D(Ellipsoid(3, 1, 2, 45, 45, 0))
-    
-
-    _plot3D(Ellipsoid(3, 1, 2, 60, 60, 0))
-    
-    _plot3D(Ellipsoid(3, 1, 2, 60, 30, 0))
-    
-   # N,E,Z = 1,3,2, Aligned
-    _plot3D(Ellipsoid(3, 1, 2, 90, 0, 0))
-
-    # N,E,Z = 2,3,1, aligned
-    _plot3D(Ellipsoid(3, 1, 2, 90, 0, 90))
+    s_maj, s_min, s_int = 5, 1, 3
+    for azi in range(0, 180, 30):
+        plunge = 30
+        rot = 30
+        _plot3D(Ellipsoid(s_maj, s_min, s_int, azi, plunge, rot))
+    for plunge in range(0, 180, 30):
+        azi = 30
+        rot = 30
+        _plot3D(Ellipsoid(s_maj, s_min, s_int, azi, plunge, rot))
+    for rot in range(0, 180, 30):
+        azi = 30
+        plunge = 30
+        _plot3D(Ellipsoid(s_maj, s_min, s_int, azi, plunge, rot))
 
 
 def slugify(value):
@@ -56,7 +39,7 @@ def _plot3D(el):
     xy_el = el.to_Ellipse()
     title = el.__str__(as_ints=True) + ', ' + str(xy_el)
     print(title)
-    fname = slugify(el.__str__(as_ints=True)) + '.png'
+    fname = os.path.join('data',slugify(el.__str__(as_ints=True)) + '.png')
     fig = plt.figure()
 
     # View from Top

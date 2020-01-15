@@ -26,6 +26,7 @@ azimuth, plunge, rotation = 0, 0, 0.  We assume that:
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
+import warnings
 from mpl_toolkits.mplot3d import Axes3D
 from .ellipse import Ellipse
 
@@ -322,8 +323,10 @@ class Ellipsoid:
         :returns: Ellipsoids rotation object
         :rtype: :class: `~scipy.spatial.transform.Rotation`
         """
-        return R.from_euler(
-            'ZYX', (self.azimuth, self.plunge, self.rotation), degrees=True)
+        rot = R.from_euler('ZYX',
+                           (self.azimuth, self.plunge, self.rotation),
+                           degrees=True)
+        return rot
 
     def to_Ellipse(self):
         """
@@ -467,7 +470,10 @@ def _get_ZYX_angles(rot):
     :return: azimuth, plunge, rotation
     :rtype: tuple
     """
-    azi, plunge, rotation = rot.as_euler('ZYX', degrees=True)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore",category=UserWarning)
+        # warnings.simplefilter("ignore")
+        azi, plunge, rotation = rot.as_euler('ZYX', degrees=True)
     azi, plunge, rotation = _correct_angle_numerrs(azi, plunge, rotation)
     return azi, plunge, rotation
 
