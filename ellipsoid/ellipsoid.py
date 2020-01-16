@@ -69,6 +69,7 @@ class Ellipsoid:
         self.plunge = plunge
         self.rotation = rotation
         self.center = center
+        assert len(center)==3, 'center must have 3 elements'
         self._error_test()
 
     def __repr__(self, as_ints=False):
@@ -86,7 +87,7 @@ class Ellipsoid:
             self.semi_major, self.semi_minor, self.semi_intermediate,
             self.azimuth, self.plunge, self.rotation)
         if np.any(self.center):
-            fmt_str = ', {0}, {0}, {0}'.format(fmt_code)
+            fmt_str = ', ({0}, {0}, {0})'.format(fmt_code)
             s += fmt_str.format(
                 self.center[0], self.center[1], self.center[2])
         s += ')'
@@ -319,7 +320,8 @@ class Ellipsoid:
         cov = self.to_covariance()
         # our Y corresponds to Ellipse's X and vice versa!
         return Ellipse.from_cov([[cov[1, 1], cov[0, 1]],
-                                [cov[1, 0], cov[0, 0]]])
+                                [cov[1, 0], cov[0, 0]]],
+                                self.center[1::-1])
 
     def to_uncerts(self, debug=False):
         """

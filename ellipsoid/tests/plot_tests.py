@@ -26,6 +26,8 @@ def main():
         azi = 30
         plunge = 30
         _plot3D(Ellipsoid(s_maj, s_min, s_int, azi, plunge, rot))
+    # One value taken directly from Mayotte (greatest uncert is depth)
+    _plot3D(Ellipsoid(2.68e+03, 1.27e+03, 2.12e+03, -91.3, 124, 104))
 
 
 def slugify(value):
