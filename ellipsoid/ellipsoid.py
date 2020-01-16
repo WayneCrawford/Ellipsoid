@@ -112,31 +112,10 @@ class Ellipsoid:
         :return: equal
         :rtype: bool
         """
-        if not abs((self.semi_major - other.semi_major)
-                   / self.semi_major) < 1e-5:
-            return False
-        if not abs((self.semi_minor - other.semi_minor)
-                   / self.semi_minor) < 1e-2:
-            return False
-        if not abs(
-                (self.semi_intermediate - other.semi_intermediate) /
-                abs(self.semi_intermediate)) < 1e-2:
-            return False
         if not self.center == other.center:
             return False
-        # Compare rotation vectors
-        self_rmat=self._rotation().as_matrix().round(5)
-        other_rmat=other._rotation().as_matrix().round(5)
-        if debug:
-            print(self_rmat)
-            print(other_rmat)
-        if np.equal(self_rmat, other_rmat).all():
+        if np.all(np.abs(self.to_covariance() - other.to_covariance()) < 1e-5):
             return True
-        else:
-            for fixed_axis in range(2,-1,-1):  # counts down 2, 1, 0...
-                self_testmat = _rotmat_fliptwo(self._rotation(), fixed_axis).as_matrix().round(5)
-                if  np.equal(self_testmat, other_rmat).all():
-                    return True
         return False
 
     def _error_test(self):
