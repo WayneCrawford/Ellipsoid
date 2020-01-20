@@ -181,7 +181,7 @@ class TestEllipsoidMethods(unittest.TestCase):
         y_errs = (1.33, 0.5, 1.0)
         for c_xy in [0, 0.2, 0.4, 0.6]:
             for (x_err, y_err) in zip(x_errs, y_errs):
-                ell = Ellipse.from_uncertainties(x_err, y_err, c_xy, center)
+                ell = Ellipse.from_uncertainties((x_err, y_err), c_xy, center)
                 (x_err_out, y_err_out, c_xy_out, center_out) =\
                     ell.to_uncertainties()
                 self.assertAlmostEqual(x_err, x_err_out)
@@ -193,7 +193,7 @@ class TestEllipsoidMethods(unittest.TestCase):
         y_err = 1.1
         c_xy = -0.2149
         # Calculate ellipse
-        ell = Ellipse.from_uncertainties(x_err, y_err, c_xy, center)
+        ell = Ellipse.from_uncertainties((x_err, y_err), c_xy, center)
         self.assertAlmostEqual(ell.a, 1.120674193646)
         self.assertAlmostEqual(ell.b, 0.451762494786)
         self.assertAlmostEqual(ell.theta, 167.9407699)
@@ -241,7 +241,7 @@ class TestEllipsoidMethods(unittest.TestCase):
         baz = 90
         viewpoint = (5, 5)
         # Calculate ellipse
-        ell = Ellipse.from_uncertainties_baz(x_err, y_err, c_xy,
+        ell = Ellipse.from_uncertainties_baz((x_err, y_err), c_xy,
                                        dist, baz, viewpoint)
         self.assertAlmostEqual(ell.a, 1.120674193646)
         self.assertAlmostEqual(ell.b, 0.451762494786)
@@ -250,7 +250,7 @@ class TestEllipsoidMethods(unittest.TestCase):
         self.assertAlmostEqual(ell.y, 5)
         baz = 180
         ell = Ellipse.from_uncertainties_baz(
-            x_err, y_err, c_xy, dist, baz, viewpoint)
+            (x_err, y_err), c_xy, dist, baz, viewpoint)
         self.assertAlmostEqual(ell.x, 5)
         self.assertAlmostEqual(ell.y, -5)
 

@@ -1,7 +1,12 @@
-#! /bin/env python3
 # -*- coding: utf-8 -*-
 """
 QuakeML ConfidenceEllipsoid
+
+:copyright:
+    The ObsPy Development Team (devs@obspy.org)
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 
 Angles are *intrinsic* (about the axes of the rotating coord syst)
 
@@ -23,6 +28,11 @@ azimuth, plunge, rotation = 0, 0, 0.  We assume that:
     semi-major is along x (S-N)
     semi-minor is along y (W-E)
 """
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+from future.builtins import *  # NOQA @UnusedWildImport
+
+
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
@@ -40,7 +50,7 @@ class Ellipsoid:
                  plunge=0, rotation=0,
                  center=(0, 0, 0)):
         """
-        Create an Ellipsoid instance
+        Create an Ellipsoid
 
         Angles are *intrinsic* (about the axes of the Ellipsoid's coord syst)
         and are applied in the order azimuth, plunge, rotation (Z-Y-X)
@@ -72,60 +82,15 @@ class Ellipsoid:
         assert len(center) == 3, 'center must have 3 elements'
         self._error_test()
 
-    def __repr__(self, as_ints=False):
-        """
-        String describing the ellipsoid
-
-        :param as_ints: print parameters as integers
-        :type as_ints: Boolean
-        """
-        fmt_code = '{:.3g}'
-        if as_ints:
-            fmt_code = '{:.0f}'
-        fmt_str = 'Ellipsoid({0}, {0}, {0}, {0}, {0}, {0}'.format(fmt_code)
-        s = fmt_str.format(
-            self.semi_major, self.semi_minor, self.semi_intermediate,
-            self.azimuth, self.plunge, self.rotation)
-        if np.any(self.center):
-            fmt_str = ', ({0}, {0}, {0})'.format(fmt_code)
-            s += fmt_str.format(
-                self.center[0], self.center[1], self.center[2])
-        s += ')'
-        return s
-
-    def __str__(self, as_ints=False):
-        """
-        String describing the Ellipsoid
-
-        :param as_ints: print parameters as integers
-        :type as_ints: Boolean
-        :return: string
-        :rtype: str
-        """
-        return self.__repr__(as_ints)
-
-    def __eq__(self, other, debug=False):
-        """
-        Returns true if two Ellipsoids are equal
-
-        :param other: second Ellipsoid
-        :type other:  :class: `~ellipsoid.Ellipsoid`
-        :return: equal
-        :rtype: bool
-        """
-        if not self.center == other.center:
-            return False
-        if np.all(np.abs(self.to_covariance() - other.to_covariance()) < 1e-5):
-            return True
-        return False
-
     @classmethod
     def from_covariance(cls, cov, center=(0, 0, 0), debug=False):
-        """Create Ellipsoid using covariance matrix
+        """Create Ellipsoid from a covariance matrix
 
-        :param cov: covariance matrix (0, 1, 2 correspond to N, E, Z)
+        :param cov: covariance matrix [[c_nn, c_ne, c_nz],
+                                       [c_en, c_ee, c_ez],
+                                       [c_zn, c_z3, c_zz]]
         :type cov: numpy.array or list of lists
-        :param center: center of the ellipse (N,E,Z)
+        :param center: center of the Ellipsoid (N, E, Z)
         :type center: tuple, optional
         :return: Ellipsoid
         :rtype: :class: `~ellipsoid.Ellipsoid`
@@ -175,11 +140,8 @@ class Ellipsoid:
     @classmethod
     def from_uncertainties(cls, errors, cross_covs=(0, 0, 0),
                            center=(0, 0, 0), debug=False):
-        """Set Ellipsoid using common epicenter uncertainties
-
-        Call as e=ellipsoid.from_uncerts(errors, cross_covs, center)
-
-        N, E, Z = Depth
+        """
+        Set Ellipsoid using epicenter uncertainties and cross_covariances
 
         Inputs:
         :param errors: (N, E, Z) errors (m)
@@ -195,6 +157,53 @@ class Ellipsoid:
                [cross_covs[0], errors[1]**2,  cross_covs[2]],
                [cross_covs[1], cross_covs[2], errors[2]**2]]
         return cls.from_covariance(cov, center)
+
+    def __repr__(self, as_ints=False):
+        """
+        String describing the ellipsoid
+
+        :param as_ints: print parameters as integers
+        :type as_ints: Boolean
+        """
+        fmt_code = '{:.3g}'
+        if as_ints:
+            fmt_code = '{:.0f}'
+        fmt_str = 'Ellipsoid({0}, {0}, {0}, {0}, {0}, {0}'.format(fmt_code)
+        s = fmt_str.format(
+            self.semi_major, self.semi_minor, self.semi_intermediate,
+            self.azimuth, self.plunge, self.rotation)
+        if np.any(self.center):
+            fmt_str = ', ({0}, {0}, {0})'.format(fmt_code)
+            s += fmt_str.format(
+                self.center[0], self.center[1], self.center[2])
+        s += ')'
+        return s
+
+    def __str__(self, as_ints=False):
+        """
+        String describing the Ellipsoid
+
+        :param as_ints: print parameters as integers
+        :type as_ints: Boolean
+        :return: string
+        :rtype: str
+        """
+        return self.__repr__(as_ints)
+
+    def __eq__(self, other, debug=False):
+        """
+        Returns true if two Ellipsoids are equal
+
+        :param other: second Ellipsoid
+        :type other:  :class: `~ellipsoid.Ellipsoid`
+        :return: equal
+        :rtype: bool
+        """
+        if not self.center == other.center:
+            return False
+        if np.all(np.abs(self.to_covariance() - other.to_covariance()) < 1e-5):
+            return True
+        return False
 
     def to_covariance(self, debug=False):
         """

@@ -12,9 +12,6 @@ Routines for error ellipses in seismological coordinates (N=0, W=90)
 - See if a point is inside or on an ellipse
 - Calculate the angle subtended by an ellipse (for back-azimuth uncertainty)
 - Plot an ellipse
-
-.. note:
- TODO: ellipsoids (3D ellipses)
 """
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -28,52 +25,35 @@ import warnings
 
 
 class Ellipse:
-    def __init__(self, a, b, theta=0, center=(0, 0)):
+    def __init__(self, semi_major, semi_minor, azimuth=0, center=(0, 0)):
         """Create an Ellipse
 
         The ellipse is assumed to be centered at zero with its semi-major axis
         axis aligned along the NORTH axis (geographic standard, not math
         standard!) unless orientation and/or center are set otherwise
-        You can think of it as theta (geographic angle) = 90-phi (math angle)
 
-        :param a: length of semi-major axis (m)
-        :type a: float
-        :param b: length of semi-minor axis (m)
-        :type b: float
-        :param theta: azimuth (degrees clockwise from 0=N)
+        :param semi_major: length of the semi-major axis (m)
+        :type semi_major: float
+        :param semi_minor: length of the semi-minor axis (m)
+        :type semi_minor: float
+        :param azuimuth: azimuth (degrees clockwise from 0=N)
         :type b: float
         :param center: x,y coordinates of ellipse center
         :type center: tuple of numeric
         :return: ellipse
-        :rtype: :class: `~obspy.io.nordic.ellipse.Ellipse`
+        :rtype: :class: `~~ellipsoid.Ellipse`
         """
-        if a < b:
+        if semi_major < semi_minor:
             warnings.warn('Semi-major smaller than semi-minor! Switching...')
-        self.a = max(a, b)
-        self.b = min(a, b)
-        self.theta = theta
+        self.a = max(semi_major, semi_minor)
+        self.b = min(semi_major, semi_minor)
+        self.theta = azimuth
         self.x = center[0]
         self.y = center[1]
 
     @classmethod
-    def from_origin_uncertainty(cls, uncert, center=(0, 0)):
-        """Set Ellipse from obspy origin_uncertainty
-
-        :param uncert: obspy origin_uncertainty
-        :type uncert: :class: `~obspy.origin.origin_uncertainty`
-        :param center: center position (x,y)
-        :type center: 2-tuple of numeric
-        :return: ellipse
-        :rtype: :class: `~obspy.io.nordic.ellipse.Ellipse`
-        """
-        a = uncert.max_horizontal_uncertainty
-        b = uncert.min_horizontal_uncertainty
-        theta = uncert.azimuth_max_horizontal_uncertainty
-        return cls(a, b, theta, center)
-
-    @classmethod
     def from_covariance(cls, cov, center=(0, 0)):
-        """Set Ellipse using covariance matrix
+        """Create Ellipse from a covariance matrix
 
         Sources:
             http://www.visiondummy.com/2014/04/
@@ -82,11 +62,13 @@ class Ellipse:
                     prediction-ellipses-from-covariance.html
 
         :param cov: covariance matrix [[c_xx, c_xy], [c_xy, c_yy]]
-        :type cov: 2-list of 2-lists
-        :param center: center position (x,y)
-        :type center: 2-tuple of numeric
-        :return: ellipse
-        :rtype: :class: `~obspy.io.nordic.ellipse.Ellipse`
+        :type cov: numpy.array or list of lists
+        :param center: center of the Ellipse (x, y)
+        :type center: tuple, optional
+        :return: Ellipse
+        :rtype: :class: `~ellipsoid.Ellipse`
+
+        The covariance matrix must be symmetric and positive definite
         """
         cov = np.array(cov)
         if _almost_good_cov(cov):
@@ -114,35 +96,30 @@ class Ellipse:
         return cls(a, b, theta, center)
 
     @classmethod
-    def from_uncertainties(cls, x_err, y_err, c_xy, center=(0, 0)):
-        """Set Ellipse using epicenter uncertainties
+    def from_uncertainties(cls, errors, c_xy, center=(0, 0)):
+        """
+        Set Ellipse using epicenter uncertainties and cross_covariances
 
-        Call as e=Ellipse.from_uncertaintiesx_err,y_err,c_xy,center)
-
-        :param x_err: x error (m)
-        :type x_err: float
-        :param y_err: y error (m)
-        :type y_err: float
+        :param errors: (x, y) errors (m)
+        :type errors: tuple
         :param c_xy:  x-y cross-covariance (m^2)
         :type c_xy: float
         :param center: center position (x,y)
         :type center: 2-tuple of numeric
         :return: ellipse
-        :rtype: :class: `~obspy.io.nordic.ellipse.Ellipse`
+        :rtype: :class: `~ellipsoid.Ellipse`
         """
-        cov = [[x_err**2, c_xy], [c_xy, y_err**2]]
+        cov = [[errors[0]**2, c_xy], [c_xy, errors[1]**2]]
         return cls.from_covariance(cov, center)
 
     @classmethod
-    def from_uncertainties_baz(cls, x_err, y_err, c_xy, dist, baz,
+    def from_uncertainties_baz(cls, errors, c_xy, dist, baz,
                                viewpoint=(0, 0)):
         """Set Ellipse using uncertainties, center using distance and back-azimuth
 
         Inputs:
-        :param x_err: x error (m)
-        :type x_err: float
-        :param y_err: y error (m)
-        :type y_err: float
+        :param errors: (x, y) error (m)
+        :type errors: float
         :param c_xy:  x-y cross-covariance (m^2)
         :type c_xy: float
         :param dist:  distance of center from observer
@@ -156,7 +133,23 @@ class Ellipse:
         """
         x = viewpoint[0] + dist * np.sin(np.radians(baz))
         y = viewpoint[1] + dist * np.cos(np.radians(baz))
-        return cls.from_uncertainties(x_err, y_err, c_xy, (x, y))
+        return cls.from_uncertainties(errors, c_xy, (x, y))
+
+    @classmethod
+    def from_origin_uncertainty(cls, uncert, center=(0, 0)):
+        """Set Ellipse from obspy origin_uncertainty
+
+        :param uncert: obspy origin_uncertainty
+        :type uncert: :class: `~obspy.origin.origin_uncertainty`
+        :param center: center position (x,y)
+        :type center: 2-tuple of numeric
+        :return: ellipse
+        :rtype: :class: `~obspy.io.nordic.ellipse.Ellipse`
+        """
+        a = uncert.max_horizontal_uncertainty
+        b = uncert.min_horizontal_uncertainty
+        theta = uncert.azimuth_max_horizontal_uncertainty
+        return cls(a, b, theta, center)
 
     def __repr__(self):
         """String describing the ellipse
