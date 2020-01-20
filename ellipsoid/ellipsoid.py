@@ -119,24 +119,9 @@ class Ellipsoid:
             return True
         return False
 
-    def _error_test(self):
-        """
-        Test for invalid parameters
-
-        Are axis lengths in the right order (major > intermediate > minor)?
-        
-        :return: True if right order, False if wrong
-        :rtype: bool
-        """
-        lengths = [self.semi_minor, self.semi_intermediate, self.semi_major]
-        # print(lengths)
-        sorted_lengths = np.sort(lengths)
-        assert np.all(lengths == sorted_lengths),\
-            'not major > intermed > minor'
-
     @classmethod
     def from_covariance(cls, cov, center=(0, 0, 0), debug=False):
-        """Set error ellipsoid using covariance matrix
+        """Create Ellipsoid using covariance matrix
 
         :param cov: covariance matrix (0, 1, 2 correspond to N, E, Z)
         :type cov: numpy.array or list of lists
@@ -187,69 +172,10 @@ class Ellipsoid:
                                 separator=",", prefix=23*' ')))
         return obj
 
-    @staticmethod
-    def _eigen_to_rot(evals, evecs, debug=False):
-        """
-        Create rotation matrix corresponding to eigenvalues/vectors
-        
-        Doesn't always return the same axis directions as the input covariance,
-        but this is handled in _calc_rotation_angles()
-    
-        :param evals: eigenvalues
-        :param evecs: matrix of eigenvectors (columns)
-        """
-        i_sort = np.argsort(evals)
-        evals = evals[i_sort]
-        evecs = evecs[:, i_sort]
-        imin, iint, imaj = 0, 1, 2
-        i_axorder = [imaj, imin, iint]
-
-        # Force right-hand rule
-        if np.dot(evecs[:, iint], 
-                  np.cross(evecs[:, imaj], evecs[:, imin])) < 0:
-            evecs[:, iint] *= -1
-
-        if debug:
-            np.set_printoptions(precision=2, suppress=True)
-            print('===from_covariance()._eigen_to_rot===')
-            print('evecs = {}'.format(
-                np.array2string(evecs[:, i_axorder],
-                                separator=",", prefix=8*' ')))
-            print('evecs[:, iint] . (evecs[:, imaj] x evecs[:, imin]) = {:g}'.\
-                format(np.dot(evecs[:, iint],
-                              np.cross(evecs[:,imaj], evecs[:,imin]))))
-
-        s_min, s_inter, s_maj = np.sqrt(evals[[imin, iint, imaj]])
-        return s_min, s_inter, s_maj, evecs[:, i_axorder]
-
-    @staticmethod
-    def _calc_rotation_angles(evecs, debug=False):
-        """
-        Calculate rotation angles from eigenvectors
-
-        :param evecs: eigenvector matrix, ordered from semi-minor (column 0)
-                      to semi-major (column 3)
-        """
-        rot = R.from_matrix(evecs) 
-        azi, plunge, rotation = _get_ZYX_angles(rot)
-        if not _are_valid_angles(azi, plunge, rotation):
-            if debug:
-                print('Handling invalid angles')
-            azi, plunge, rotation = _find_valid_angles(azi, plunge, rotation)
-            for fixed_axis in range(2,-1,-1):  # counts down 2, 1, 0...
-                if azi is not None:
-                    break
-                azi, plunge, rotation = _get_ZYX_angles(
-                    _rotmat_fliptwo(rot, fixed_axis))
-                azi, plunge, rotation = _find_valid_angles(azi,
-                                                           plunge, rotation)
-            assert _are_valid_angles(azi, plunge, rotation)                
-        return (azi, plunge, rotation)
-
     @classmethod
-    def from_uncerts(cls, errors, cross_covs=(0, 0, 0), center=(0, 0, 0),
+    def from_uncertainties(cls, errors, cross_covs=(0, 0, 0), center=(0, 0, 0),
                      debug=False):
-        """Set error ellipse using common epicenter uncertainties
+        """Set Ellipsoid using common epicenter uncertainties
 
         Call as e=ellipsoid.from_uncerts(errors, cross_covs, center)
 
@@ -296,18 +222,6 @@ class Ellipsoid:
 
         return cov
 
-    def _rotation(self):
-        """
-        Return Ellipsoid's rotation
-        
-        :returns: Ellipsoids rotation object
-        :rtype: :class: `~scipy.spatial.transform.Rotation`
-        """
-        rot = R.from_euler('ZYX',
-                           (self.azimuth, self.plunge, self.rotation),
-                           degrees=True)
-        return rot
-
     def to_Ellipse(self):
         """
         Return the Ellipse bounding the Ellipsoid, viewed from above
@@ -319,11 +233,11 @@ class Ellipsoid:
         """
         cov = self.to_covariance()
         # our Y corresponds to Ellipse's X and vice versa!
-        return Ellipse.from_cov([[cov[1, 1], cov[0, 1]],
-                                [cov[1, 0], cov[0, 0]]],
-                                self.center[1::-1])
+        return Ellipse.from_covariance([[cov[1, 1], cov[0, 1]],
+                                        [cov[1, 0], cov[0, 0]]],
+                                       self.center[1::-1])
 
-    def to_uncerts(self, debug=False):
+    def to_uncertainties(self, debug=False):
         """
         Return errors and covariances corresponding to ellipsoid
 
@@ -415,6 +329,92 @@ class Ellipsoid:
             if show:
                 plt.show()
             return fig
+
+    def _error_test(self):
+        """
+        Test for invalid parameters
+
+        Are axis lengths in the right order (major > intermediate > minor)?
+        
+        :return: True if right order, False if wrong
+        :rtype: bool
+        """
+        lengths = [self.semi_minor, self.semi_intermediate, self.semi_major]
+        # print(lengths)
+        sorted_lengths = np.sort(lengths)
+        assert np.all(lengths == sorted_lengths),\
+            'not major > intermed > minor'
+
+    def _rotation(self):
+        """
+        Return Ellipsoid's rotation
+        
+        :returns: Ellipsoids rotation object
+        :rtype: :class: `~scipy.spatial.transform.Rotation`
+        """
+        rot = R.from_euler('ZYX',
+                           (self.azimuth, self.plunge, self.rotation),
+                           degrees=True)
+        return rot
+
+    @staticmethod
+    def _eigen_to_rot(evals, evecs, debug=False):
+        """
+        Create rotation matrix corresponding to eigenvalues/vectors
+        
+        Doesn't always return the same axis directions as the input covariance,
+        but this is handled in _calc_rotation_angles()
+    
+        :param evals: eigenvalues
+        :param evecs: matrix of eigenvectors (columns)
+        """
+        i_sort = np.argsort(evals)
+        evals = evals[i_sort]
+        evecs = evecs[:, i_sort]
+        imin, iint, imaj = 0, 1, 2
+        i_axorder = [imaj, imin, iint]
+
+        # Force right-hand rule
+        if np.dot(evecs[:, iint], 
+                  np.cross(evecs[:, imaj], evecs[:, imin])) < 0:
+            evecs[:, iint] *= -1
+
+        if debug:
+            np.set_printoptions(precision=2, suppress=True)
+            print('===from_covariance()._eigen_to_rot===')
+            print('evecs = {}'.format(
+                np.array2string(evecs[:, i_axorder],
+                                separator=",", prefix=8*' ')))
+            print('evecs[:, iint] . (evecs[:, imaj] x evecs[:, imin]) = {:g}'.\
+                format(np.dot(evecs[:, iint],
+                              np.cross(evecs[:,imaj], evecs[:,imin]))))
+
+        s_min, s_inter, s_maj = np.sqrt(evals[[imin, iint, imaj]])
+        return s_min, s_inter, s_maj, evecs[:, i_axorder]
+
+    @staticmethod
+    def _calc_rotation_angles(evecs, debug=False):
+        """
+        Calculate rotation angles from eigenvectors
+
+        :param evecs: eigenvector matrix, ordered from semi-minor (column 0)
+                      to semi-major (column 3)
+        """
+        rot = R.from_matrix(evecs) 
+        azi, plunge, rotation = _get_ZYX_angles(rot)
+        if not _are_valid_angles(azi, plunge, rotation):
+            if debug:
+                print('Handling invalid angles')
+            azi, plunge, rotation = _find_valid_angles(azi, plunge, rotation)
+            for fixed_axis in range(2,-1,-1):  # counts down 2, 1, 0...
+                if azi is not None:
+                    break
+                azi, plunge, rotation = _get_ZYX_angles(
+                    _rotmat_fliptwo(rot, fixed_axis))
+                azi, plunge, rotation = _find_valid_angles(azi,
+                                                           plunge, rotation)
+            assert _are_valid_angles(azi, plunge, rotation)                
+        return (azi, plunge, rotation)
 
 
 def _set_axes_radius(ax, origin, radius):

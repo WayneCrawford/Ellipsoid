@@ -29,18 +29,18 @@ import warnings
 
 class Ellipse:
     def __init__(self, a, b, theta=0, center=(0, 0)):
-        """Defines an ellipse
+        """Create an Ellipse
 
         The ellipse is assumed to be centered at zero with its semi-major axis
         axis aligned along the NORTH axis (geographic standard, not math
         standard!) unless orientation and/or center are set otherwise
         You can think of it as theta (geographic angle) = 90-phi (math angle)
 
-        :param a: length of semi-major axis
+        :param a: length of semi-major axis (m)
         :type a: float
-        :param b: length of semi-minor axis
+        :param b: length of semi-minor axis (m)
         :type b: float
-        :param theta: azimuth (degrees CW from 0=N (y positive))
+        :param theta: azimuth (degrees clockwise from 0=N)
         :type b: float
         :param center: x,y coordinates of ellipse center
         :type center: tuple of numeric
@@ -72,8 +72,8 @@ class Ellipse:
         return cls(a, b, theta, center)
 
     @classmethod
-    def from_cov(cls, cov, center=(0, 0)):
-        """Set error ellipse using covariance matrix
+    def from_covariance(cls, cov, center=(0, 0)):
+        """Set Ellipse using covariance matrix
 
         Sources:
             http://www.visiondummy.com/2014/04/
@@ -114,16 +114,16 @@ class Ellipse:
         return cls(a, b, theta, center)
 
     @classmethod
-    def from_uncerts(cls, x_err, y_err, c_xy, center=(0, 0)):
-        """Set error ellipse using Nordic epicenter uncertainties
+    def from_uncertainties(cls, x_err, y_err, c_xy, center=(0, 0)):
+        """Set Ellipse using Nordic epicenter uncertainties
 
         Call as e=Ellipse.from_uncerts(x_err,y_err,c_xy,center)
 
-        :param x_err: x error (dist_units)
+        :param x_err: x error (m)
         :type x_err: float
-        :param y_err: y error (dist_units)
+        :param y_err: y error (m)
         :type y_err: float
-        :param c_xy:  x-y covariance (dist_units^2)
+        :param c_xy:  x-y cross-covariance (m^2)
         :type c_xy: float
         :param center: center position (x,y)
         :type center: 2-tuple of numeric
@@ -136,14 +136,14 @@ class Ellipse:
     @classmethod
     def from_uncerts_baz(cls, x_err, y_err, c_xy, dist, baz,
                          viewpoint=(0, 0)):
-        """Set error ellipse using uncertainties, distance and back-azimuth
+        """Set Ellipse using uncertainties, center using distance and back-azimuth
 
         Inputs:
-        :param x_err: x error (dist_units)
+        :param x_err: x error (m)
         :type x_err: float
-        :param y_err: y error (dist_units)
+        :param y_err: y error (m)
         :type y_err: float
-        :param c_xy:  x-y covariance (dist_units^2)
+        :param c_xy:  x-y cross-covariance (m^2)
         :type c_xy: float
         :param dist:  distance of center from observer
         :type dist: float
