@@ -5,6 +5,7 @@ Ellipsoid
 Class to create confidence ellipses and ellipsoids
 
 One stupid thing: some Ellipse and Ellipse creators are inverted with respect to each other :
+
 - Ellipse.from_cov(cov, center:
         :param cov: covariance matrix [[c_xx, c_xy], [c_xy, c_yy]]
         :param center: center position (x,y)
@@ -16,6 +17,7 @@ One stupid thing: some Ellipse and Ellipse creators are inverted with respect to
 
 
 Ellipsoids are created using:
+
 - Ellipsoid.from_covariance(cov, center)
         :param cov: covariance matrix (0, 1, 2 correspond to N, E, Z)
         :param center: center of the ellipse (N,E,Z)
