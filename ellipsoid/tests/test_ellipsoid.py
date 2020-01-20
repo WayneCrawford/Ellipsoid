@@ -11,12 +11,12 @@ import inspect
 import os
 import unittest
 import numpy as np
-import sys
-sys.path.append('../')
 from ellipsoid import Ellipsoid, Ellipse
 from obspy.core.util.testing import ImageComparison
-import warnings
+# import warnings
 from itertools import cycle
+import sys
+sys.path.append('../')
 
 
 class TestEllipsoidMethods(unittest.TestCase):
@@ -87,8 +87,8 @@ class TestEllipsoidMethods(unittest.TestCase):
         # Just try one for now (not sure of my equations)
         self.assertEqual(
             Ellipsoid.from_uncertainties((s_maj, s_int, s_min),
-                                   (s_maj * s_int * factor, 0, 0)),
-            Ellipsoid(np.sqrt(s_maj**2 + s_int**2), 0.00235, s_min, 
+                                         (s_maj * s_int * factor, 0, 0)),
+            Ellipsoid(np.sqrt(s_maj**2 + s_int**2), 0.00235, s_min,
                       np.degrees(np.arctan2(s_int, s_maj)), 0, 0))
 
     def test_ellipsoid_fail(self):
@@ -114,7 +114,7 @@ class TestEllipsoidMethods(unittest.TestCase):
         rng = np.random.default_rng()
         # azi, plunge, rot = 0, 90 , 0
         for i in range(5):
-            #azi, plunge, rot = rng.integers(1, 90, size=3)
+            # azi, plunge, rot = rng.integers(1, 90, size=3)
             azi = rng.integers(-90, 360)
             plunge = rng.integers(-90, 360)
             rot = rng.integers(-90, 90)
@@ -148,26 +148,6 @@ class TestEllipsoidMethods(unittest.TestCase):
         self.assertEqual(e.to_Ellipse(), Ellipse(s_int, s_min, 0))
         e = Ellipsoid(s_maj, s_min, s_int, 90, 90, 0)
         self.assertEqual(e.to_Ellipse(), Ellipse(s_int, s_min, 90))
-
-    def test_ellipse_plot(self):
-        """
-        Not implemented, but can compare a plot with one stored in the data/
-        directory
-        """
-        # pass
-        # Test single ellipse
-        with ImageComparison(self.testing_path, 'plot_ellipse.png',
-                             style='classic', reltol=10) as ic:
-            Ellipse(20, 10, 90).plot(outfile=ic.name)
-        # Test multi-ellipse figure
-        with ImageComparison(self.testing_path, 'plot_ellipses.png',
-                             style='classic', reltol=10) as ic:
-            fig = Ellipse(20, 10, 90).plot(color='r')
-            fig = Ellipse(20, 10, 45).plot(fig=fig, color='b')
-            fig = Ellipse(20, 10, 0, center=(10, 10)).plot(fig=fig,
-                          color='g')
-            fig = Ellipse(20, 10, -45).plot(fig=fig, outfile=ic.name)
-
 
     def test_ellipse_from_to_uncerts(self):
         """
@@ -242,7 +222,7 @@ class TestEllipsoidMethods(unittest.TestCase):
         viewpoint = (5, 5)
         # Calculate ellipse
         ell = Ellipse.from_uncertainties_baz((x_err, y_err), c_xy,
-                                       dist, baz, viewpoint)
+                                             dist, baz, viewpoint)
         self.assertAlmostEqual(ell.a, 1.120674193646)
         self.assertAlmostEqual(ell.b, 0.451762494786)
         self.assertAlmostEqual(ell.theta, 167.9407699)
@@ -299,26 +279,44 @@ class TestEllipsoidMethods(unittest.TestCase):
 
     def test_ellipse_plot(self):
         """
-        Test Ellipse.plot()
-
-        To generate test figures, used same commands after:
-        from ellipse import Ellipse
-        import matplotlib.pyplot as plt
-        plt.style.use('classic')
+        Compare a plot with one stored in the data/ directory
         """
         # Test single ellipse
         with ImageComparison(self.testing_path, 'plot_ellipse.png',
                              style='classic', reltol=10) as ic:
             Ellipse(20, 10, 90).plot(outfile=ic.name)
+
         # Test multi-ellipse figure
         with ImageComparison(self.testing_path, 'plot_ellipses.png',
                              style='classic', reltol=10) as ic:
             fig = Ellipse(20, 10, 90).plot(color='r')
             fig = Ellipse(20, 10, 45).plot(fig=fig, color='b')
             fig = Ellipse(20, 10, 0, center=(10, 10)).plot(fig=fig,
-                          color='g')
+                                                           color='g')
             fig = Ellipse(20, 10, -45).plot(fig=fig, outfile=ic.name)
 
+#     def test_ellipse_plot(self):
+#         """
+#         Test Ellipse.plot()
+#
+#         To generate test figures, used same commands after:
+#         from ellipse import Ellipse
+#         import matplotlib.pyplot as plt
+#         plt.style.use('classic')
+#         """
+#         # Test single ellipse
+#         with ImageComparison(self.testing_path, 'plot_ellipse.png',
+#                              style='classic', reltol=10) as ic:
+#             Ellipse(20, 10, 90).plot(outfile=ic.name)
+#         # Test multi-ellipse figure
+#         with ImageComparison(self.testing_path, 'plot_ellipses.png',
+#                              style='classic', reltol=10) as ic:
+#             fig = Ellipse(20, 10, 90).plot(color='r')
+#             fig = Ellipse(20, 10, 45).plot(fig=fig, color='b')
+#             fig = Ellipse(20, 10, 0, center=(10, 10)).plot(fig=fig,
+#                           color='g')
+#             fig = Ellipse(20, 10, -45).plot(fig=fig, outfile=ic.name)
+#
     def test_ellipse_plot_tangents(self):
         """
         Test Ellipse.plot_tangents()
@@ -376,6 +374,7 @@ class TestEllipsoidMethods(unittest.TestCase):
                                         print_angle=True,
                                         pt_name='pt{:d}'.format(angle),
                                         outfile=outfile)
+
 
 def _cov_mat(c_xx, c_yy, c_zz, c_xy, c_xz, c_yz):
     return np.array([[c_xx, c_xy, c_xz],
