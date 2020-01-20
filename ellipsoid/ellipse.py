@@ -115,9 +115,9 @@ class Ellipse:
 
     @classmethod
     def from_uncertainties(cls, x_err, y_err, c_xy, center=(0, 0)):
-        """Set Ellipse using Nordic epicenter uncertainties
+        """Set Ellipse using epicenter uncertainties
 
-        Call as e=Ellipse.from_uncerts(x_err,y_err,c_xy,center)
+        Call as e=Ellipse.from_uncertaintiesx_err,y_err,c_xy,center)
 
         :param x_err: x error (m)
         :type x_err: float
@@ -131,11 +131,11 @@ class Ellipse:
         :rtype: :class: `~obspy.io.nordic.ellipse.Ellipse`
         """
         cov = [[x_err**2, c_xy], [c_xy, y_err**2]]
-        return cls.from_cov(cov, center)
+        return cls.from_covariance(cov, center)
 
     @classmethod
-    def from_uncerts_baz(cls, x_err, y_err, c_xy, dist, baz,
-                         viewpoint=(0, 0)):
+    def from_uncertainties_baz(cls, x_err, y_err, c_xy, dist, baz,
+                               viewpoint=(0, 0)):
         """Set Ellipse using uncertainties, center using distance and back-azimuth
 
         Inputs:
@@ -156,7 +156,7 @@ class Ellipse:
         """
         x = viewpoint[0] + dist * np.sin(np.radians(baz))
         y = viewpoint[1] + dist * np.cos(np.radians(baz))
-        return cls.from_uncerts(x_err, y_err, c_xy, (x, y))
+        return cls.from_uncertainties(x_err, y_err, c_xy, (x, y))
 
     def __repr__(self):
         """String describing the ellipse
@@ -176,13 +176,13 @@ class Ellipse:
     def __eq__(self, other):
         """
         Returns true if two Ellipses are equal
-        
+
         :param other: second Ellipse
         :type other:  :class: `~ellipsoid.Ellipse`
         :return: equal
         :rtype: bool
         """
-        eps=1e-5
+        eps = 1e-5
         if not abs((self.a - other.a) / self.a) < eps:
             return False
         if not abs((self.b - other.b) / self.b) < eps:
@@ -196,7 +196,7 @@ class Ellipse:
             return False
         return True
 
-    def to_cov(self):
+    def to_covariance(self):
         """Convert to covariance matrix notation
 
         Sources:
@@ -216,7 +216,7 @@ class Ellipse:
         c_xy = (self.a**2 - self.b**2) * sin_theta * cos_theta
         return [[c_xx, c_xy], [c_xy, c_yy]], (self.x, self.y)
 
-    def to_uncerts(self):
+    def to_uncertainties(self):
         """Convert to Nordic uncertainty values
 
         Call as x_err, y_err, c_xy, center =myellipse.to_uncerts()
@@ -227,7 +227,7 @@ class Ellipse:
                   x-y covariance (dist^2), center (x,y)
         :rtype: 4-tuple
         """
-        cov, center = self.to_cov()
+        cov, center = self.to_covariance()
         assert cov[0][1] == cov[1][0]
         x_err = np.sqrt(cov[0][0])
         y_err = np.sqrt(cov[1][1])

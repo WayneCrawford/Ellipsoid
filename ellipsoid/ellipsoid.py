@@ -1,7 +1,7 @@
 #! /bin/env python3
 # -*- coding: utf-8 -*-
 """
-QuakeML ConfidenceEllipsoid 
+QuakeML ConfidenceEllipsoid
 
 Angles are *intrinsic* (about the axes of the rotating coord syst)
 
@@ -35,22 +35,22 @@ a_max, p_max, r_max = 180., 180., 180.
 
 
 class Ellipsoid:
-    def __init__(self, semi_major_axis_length, semi_minor_axis_length,
-                 semi_intermediate_axis_length, azimuth=0,
+    def __init__(self, semi_major, semi_minor,
+                 semi_intermediate, azimuth=0,
                  plunge=0, rotation=0,
                  center=(0, 0, 0)):
         """
         Create an Ellipsoid instance
-        
+
         Angles are *intrinsic* (about the axes of the Ellipsoid's coord syst)
         and are applied in the order azimuth, plunge, rotation (Z-Y-X)
 
-        :param semi_major_axis_length: length of the semi-major axis (m)
-        :type semi_major_axis_length: float
-        :param semi_minor_axis_length: length of the semi-minor axis (m)
-        :type semi_minor_axis_length: float
-        :param semi_intermediate_axis_length: length of the semi-intermediate axis (m)
-        :type semi_intermediate_axis_length: float
+        :param semi_major: length of the semi-major axis (m)
+        :type semi_major: float
+        :param semi_minor: length of the semi-minor axis (m)
+        :type semi_minor: float
+        :param semi_intermediate: length of the semi-intermediate axis (m)
+        :type semi_intermediate: float
         :param azimuth: angle to rotate around Z-axis
         :type azimuth: float
         :param plunge: angle to rotate around Y-axis
@@ -62,14 +62,14 @@ class Ellipsoid:
         :return: Ellipsoid
         :rtype: :class: `~ellipsoid.Ellipsoid`
         """
-        self.semi_major = semi_major_axis_length
-        self.semi_minor = semi_minor_axis_length
-        self.semi_intermediate = semi_intermediate_axis_length
+        self.semi_major = semi_major
+        self.semi_minor = semi_minor
+        self.semi_intermediate = semi_intermediate
         self.azimuth = azimuth
         self.plunge = plunge
         self.rotation = rotation
         self.center = center
-        assert len(center)==3, 'center must have 3 elements'
+        assert len(center) == 3, 'center must have 3 elements'
         self._error_test()
 
     def __repr__(self, as_ints=False):
@@ -107,7 +107,7 @@ class Ellipsoid:
     def __eq__(self, other, debug=False):
         """
         Returns true if two Ellipsoids are equal
-        
+
         :param other: second Ellipsoid
         :type other:  :class: `~ellipsoid.Ellipsoid`
         :return: equal
@@ -131,7 +131,7 @@ class Ellipsoid:
         :rtype: :class: `~ellipsoid.Ellipsoid`
 
         The covariance matrix must be symmetric and positive definite
-        
+
         Sets azimuth, plunge and rotation within the bounds [0, 180[
         (covers all possible ellipsoids, since ellipsoids are symmetric
         around their principal axes)
@@ -151,7 +151,7 @@ class Ellipsoid:
         evals, evecs = np.linalg.eigh(cov)
         assert np.all(evals > 0),\
             f'Covariance matrix {cov} is not positive definite'
-        assert np.allclose(np.linalg.norm(evecs, axis=1),[1.,1.,1.]),\
+        assert np.allclose(np.linalg.norm(evecs, axis=1), [1., 1., 1.]),\
             f'Eigenvectors are not unit length {evecs}'
         s_min, s_inter, s_maj, rotmat = Ellipsoid._eigen_to_rot(evals, evecs)
 
@@ -168,13 +168,13 @@ class Ellipsoid:
                 np.array2string(obj._rotation().as_matrix(),
                                 separator=",", prefix=16*' ')))
             print('rotmat/rot.as_matrix = {}'.format(
-                np.array2string(np.divide(rotmat,obj._rotation().as_matrix()),
+                np.array2string(np.divide(rotmat, obj._rotation().as_matrix()),
                                 separator=",", prefix=23*' ')))
         return obj
 
     @classmethod
-    def from_uncertainties(cls, errors, cross_covs=(0, 0, 0), center=(0, 0, 0),
-                     debug=False):
+    def from_uncertainties(cls, errors, cross_covs=(0, 0, 0),
+                           center=(0, 0, 0), debug=False):
         """Set Ellipsoid using common epicenter uncertainties
 
         Call as e=ellipsoid.from_uncerts(errors, cross_covs, center)
@@ -321,6 +321,7 @@ class Ellipsoid:
             else:
                 fig.savefig(outfile, dpi=100, transparent=True)
         elif format and not outfile:
+            import io
             imgdata = io.BytesIO()
             fig.savefig(imgdata, format=format, dpi=100, transparent=True)
             imgdata.seek(0)
@@ -335,7 +336,7 @@ class Ellipsoid:
         Test for invalid parameters
 
         Are axis lengths in the right order (major > intermediate > minor)?
-        
+
         :return: True if right order, False if wrong
         :rtype: bool
         """
@@ -348,7 +349,7 @@ class Ellipsoid:
     def _rotation(self):
         """
         Return Ellipsoid's rotation
-        
+
         :returns: Ellipsoids rotation object
         :rtype: :class: `~scipy.spatial.transform.Rotation`
         """
@@ -361,10 +362,10 @@ class Ellipsoid:
     def _eigen_to_rot(evals, evecs, debug=False):
         """
         Create rotation matrix corresponding to eigenvalues/vectors
-        
+
         Doesn't always return the same axis directions as the input covariance,
         but this is handled in _calc_rotation_angles()
-    
+
         :param evals: eigenvalues
         :param evecs: matrix of eigenvectors (columns)
         """
@@ -375,7 +376,7 @@ class Ellipsoid:
         i_axorder = [imaj, imin, iint]
 
         # Force right-hand rule
-        if np.dot(evecs[:, iint], 
+        if np.dot(evecs[:, iint],
                   np.cross(evecs[:, imaj], evecs[:, imin])) < 0:
             evecs[:, iint] *= -1
 
@@ -385,9 +386,9 @@ class Ellipsoid:
             print('evecs = {}'.format(
                 np.array2string(evecs[:, i_axorder],
                                 separator=",", prefix=8*' ')))
-            print('evecs[:, iint] . (evecs[:, imaj] x evecs[:, imin]) = {:g}'.\
-                format(np.dot(evecs[:, iint],
-                              np.cross(evecs[:,imaj], evecs[:,imin]))))
+            print('evecs[:, iint] . (evecs[:, imaj] x evecs[:, imin]) = {:g}'.
+                  format(np.dot(evecs[:, iint],
+                                np.cross(evecs[:, imaj], evecs[:, imin]))))
 
         s_min, s_inter, s_maj = np.sqrt(evals[[imin, iint, imaj]])
         return s_min, s_inter, s_maj, evecs[:, i_axorder]
@@ -400,20 +401,20 @@ class Ellipsoid:
         :param evecs: eigenvector matrix, ordered from semi-minor (column 0)
                       to semi-major (column 3)
         """
-        rot = R.from_matrix(evecs) 
+        rot = R.from_matrix(evecs)
         azi, plunge, rotation = _get_ZYX_angles(rot)
         if not _are_valid_angles(azi, plunge, rotation):
             if debug:
                 print('Handling invalid angles')
             azi, plunge, rotation = _find_valid_angles(azi, plunge, rotation)
-            for fixed_axis in range(2,-1,-1):  # counts down 2, 1, 0...
+            for fixed_axis in range(2, -1, -1):  # counts down 2, 1, 0...
                 if azi is not None:
                     break
                 azi, plunge, rotation = _get_ZYX_angles(
                     _rotmat_fliptwo(rot, fixed_axis))
                 azi, plunge, rotation = _find_valid_angles(azi,
                                                            plunge, rotation)
-            assert _are_valid_angles(azi, plunge, rotation)                
+            assert _are_valid_angles(azi, plunge, rotation)
         return (azi, plunge, rotation)
 
 
@@ -425,13 +426,13 @@ def _set_axes_radius(ax, origin, radius):
 
 
 def _set_axes_equal(ax):
-    '''Make axes of 3D plot have equal scale so that spheres appear as spheres,
+    """Make axes of 3D plot have equal scale so that spheres appear as spheres,
     cubes as cubes, etc..  This is one possible solution to Matplotlib's
     ax.set_aspect('equal') and ax.axis('equal') not working for 3D.
 
     Input
       ax: a matplotlib axis, e.g., as output from plt.gca().
-    '''
+    """
     limits = np.array([ax.get_xlim3d(),
                        ax.get_ylim3d(),
                        ax.get_zlim3d()])
@@ -443,25 +444,25 @@ def _set_axes_equal(ax):
 
 def _get_ZYX_angles(rot):
     """ Return the Z-Y-X sequence Tait-Bryan angles of a rotation matrix
-    
+
     Corrects angles very near to (but not at) boundary values
-    
+
     :param rot: rotation matrix
     :type rot: :class: `~scipy.Rotation`
     :return: azimuth, plunge, rotation
     :rtype: tuple
     """
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore",category=UserWarning)
+        warnings.filterwarnings("ignore", category=UserWarning)
         # warnings.simplefilter("ignore")
         azi, plunge, rotation = rot.as_euler('ZYX', degrees=True)
     azi, plunge, rotation = _correct_angle_numerrs(azi, plunge, rotation)
     return azi, plunge, rotation
 
-    
+
 def _rotmat_fliptwo(rot, fixed_axis=2, debug=False):
     """ Flip two axes in a rotation matrix (retains handedness)
-    
+
     :param rot: 3-dimensional rotation matrix
     :type rot: :class: `~numpy.array()`
     :param fixed_axis: index of the fixed axis (0, 1, or 2)
@@ -483,7 +484,7 @@ def _rotmat_fliptwo(rot, fixed_axis=2, debug=False):
 
 def _are_valid_angles(azi, plunge, rotation):
     """True if angles are in expected range
-    
+
     :param azi: azimuth (0. <= azi < 180.)
     :type azi: float
     :param plunge: plunge (0. <= plunge < 180.)
@@ -494,7 +495,7 @@ def _are_valid_angles(azi, plunge, rotation):
     :rtype: bool
     """
     if azi is None:
-        return False  
+        return False
     if azi < 0 or azi >= a_max:
         return False
     if plunge < 0 or plunge >= p_max:
@@ -507,7 +508,7 @@ def _are_valid_angles(azi, plunge, rotation):
 
 def _find_valid_angles(azi, plunge, rotation, debug=False):
     """ Return an equivalent Ellipsoid with valid angles, if it exists
-    
+
     :param azi: azimuth (0. <= azi < 180.)
     :type azi: float
     :param plunge: plunge (0. <= plunge < 180.)
@@ -533,11 +534,11 @@ def _find_valid_angles(azi, plunge, rotation, debug=False):
         rotation *= -1.
 
     if rotation < 0 or rotation >= r_max:
-        rotation = (rotation + 180) % 360        
+        rotation = (rotation + 180) % 360
         if rotation < 0 or rotation >= r_max:
             return None, None, None
     if debug:
-        print(f'end azi, plunge, rot = {azi}, {plunge}, {rotation}')     
+        print(f'end azi, plunge, rot = {azi}, {plunge}, {rotation}')
     azi, plunge, rotation = _correct_angle_numerrs(azi, plunge, rotation)
     return azi, plunge, rotation
 
@@ -553,12 +554,9 @@ def _correct_angle_numerrs(azi, plunge, rotation, eps=1e-5):
     rotation = _correct_close(rotation, -180., eps)
     return azi, plunge, rotation
 
-    
+
 def _correct_close(value, target, eps=1e-5):
     """ Move value to target if it is closer than eps """
     if np.abs(value - target) < eps:
         return target
     return value
-    """Correct errors where angles outside of range by numerical error only"""
-
-

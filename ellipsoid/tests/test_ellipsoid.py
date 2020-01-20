@@ -28,24 +28,24 @@ class TestEllipsoidMethods(unittest.TestCase):
             inspect.currentframe())))
         self.testing_path = os.path.join(self.path, "data")
 
-    def test_from_uncerts(self):
+    def test_from_uncertainties(self):
         """
-        Test Ellipsoid.from_uncerts() (and from_covariance).
+        Test Ellipsoid.from_uncertainties() (and from_covariance).
         """
         s_maj, s_min, s_int = 3, 1, 2
-        self.assertEqual(Ellipsoid.from_uncerts((1, 4, 3)),
+        self.assertEqual(Ellipsoid.from_uncertainties((1, 4, 3)),
                          Ellipsoid(4, 1, 3, -90, 0, 0))
-        self.assertEqual(Ellipsoid.from_uncerts((s_min, s_maj, s_int)),
+        self.assertEqual(Ellipsoid.from_uncertainties((s_min, s_maj, s_int)),
                          Ellipsoid(s_maj, s_min, s_int, -90, 0, 0))
-        self.assertEqual(Ellipsoid.from_uncerts((s_min, s_int, s_maj)),
+        self.assertEqual(Ellipsoid.from_uncertainties((s_min, s_int, s_maj)),
                          Ellipsoid(s_maj, s_min, s_int, -90, 90, 0))
-        self.assertEqual(Ellipsoid.from_uncerts((s_int, s_maj, s_min)),
+        self.assertEqual(Ellipsoid.from_uncertainties((s_int, s_maj, s_min)),
                          Ellipsoid(s_maj, s_min, s_int, -90, 0, 90))
-        self.assertEqual(Ellipsoid.from_uncerts((s_int, s_min, s_maj)),
+        self.assertEqual(Ellipsoid.from_uncertainties((s_int, s_min, s_maj)),
                          Ellipsoid(s_maj, s_min, s_int, 0, 90, 0))
-        self.assertEqual(Ellipsoid.from_uncerts((s_maj, s_min, s_int)),
+        self.assertEqual(Ellipsoid.from_uncertainties((s_maj, s_min, s_int)),
                          Ellipsoid(s_maj, s_min, s_int, 0, 0, 0))
-        self.assertEqual(Ellipsoid.from_uncerts((s_maj, s_int, s_min)),
+        self.assertEqual(Ellipsoid.from_uncertainties((s_maj, s_int, s_min)),
                          Ellipsoid(s_maj, s_min, s_int, 0, 0, 90))
 
     def test_ellipsoid_uncert_to_covariance(self):
@@ -61,22 +61,22 @@ class TestEllipsoidMethods(unittest.TestCase):
         bc = b * c * 0.5 * rng.uniform()
         self.assertEqual(Ellipsoid.from_covariance(
                             _cov_mat(a**2, b**2, c**2, ab, ac, bc)),
-                         Ellipsoid.from_uncerts((a, b, c), (ab, ac, bc)))
+                         Ellipsoid.from_uncertainties((a, b, c), (ab, ac, bc)))
         self.assertEqual(Ellipsoid.from_covariance(
                             _cov_mat(a**2, c**2, b**2, ac, ab, bc)),
-                         Ellipsoid.from_uncerts((a, c, b), (ac, ab, bc)))
+                         Ellipsoid.from_uncertainties((a, c, b), (ac, ab, bc)))
         self.assertEqual(Ellipsoid.from_covariance(
                             _cov_mat(b**2, a**2, c**2, ab, bc, ac)),
-                         Ellipsoid.from_uncerts((b, a, c), (ab, bc, ac)))
+                         Ellipsoid.from_uncertainties((b, a, c), (ab, bc, ac)))
         self.assertEqual(Ellipsoid.from_covariance(
                             _cov_mat(b**2, c**2, a**2, bc, ab, ac)),
-                         Ellipsoid.from_uncerts((b, c, a), (bc, ab, ac)))
+                         Ellipsoid.from_uncertainties((b, c, a), (bc, ab, ac)))
         self.assertEqual(Ellipsoid.from_covariance(
                             _cov_mat(c**2, a**2, b**2, ac, bc, ab)),
-                         Ellipsoid.from_uncerts((c, a, b), (ac, bc, ab)))
+                         Ellipsoid.from_uncertainties((c, a, b), (ac, bc, ab)))
         self.assertEqual(Ellipsoid.from_covariance(
                             _cov_mat(c**2, b**2, a**2, bc, ac, ab)),
-                         Ellipsoid.from_uncerts((c, b, a), (bc, ac, ab)))
+                         Ellipsoid.from_uncertainties((c, b, a), (bc, ac, ab)))
 
     def test_ellipsoid_crosscovariance(self):
         """
@@ -86,7 +86,7 @@ class TestEllipsoidMethods(unittest.TestCase):
         factor = 0.999999
         # Just try one for now (not sure of my equations)
         self.assertEqual(
-            Ellipsoid.from_uncerts((s_maj, s_int, s_min),
+            Ellipsoid.from_uncertainties((s_maj, s_int, s_min),
                                    (s_maj * s_int * factor, 0, 0)),
             Ellipsoid(np.sqrt(s_maj**2 + s_int**2), 0.00235, s_min, 
                       np.degrees(np.arctan2(s_int, s_maj)), 0, 0))
@@ -100,11 +100,11 @@ class TestEllipsoidMethods(unittest.TestCase):
             Ellipsoid(2, 1, 3, 0, 0, 0)
         # make a too big cross-correlation
         with self.assertRaises(AssertionError):
-            Ellipsoid.from_uncerts((2, 1, 3), (3, 0, 0))
+            Ellipsoid.from_uncertainties((2, 1, 3), (3, 0, 0))
         with self.assertRaises(AssertionError):
-            Ellipsoid.from_uncerts((2, 1, 3), (0, 7, 0))
+            Ellipsoid.from_uncertainties((2, 1, 3), (0, 7, 0))
         with self.assertRaises(AssertionError):
-            Ellipsoid.from_uncerts((2, 1, 3), (0, 0, 4))
+            Ellipsoid.from_uncertainties((2, 1, 3), (0, 0, 4))
 
     def test_ellipsoid_to_from_covariance(self):
         """
@@ -124,16 +124,16 @@ class TestEllipsoidMethods(unittest.TestCase):
             # print(cov)
             self.assertEqual(e, Ellipsoid.from_covariance(cov))
 
-    def test_ellipsoid_to_from_uncerts(self):
+    def test_ellipsoid_to_from_uncertainties(self):
         """
-        Test reciprocity of to_uncerts() and from_uncerts().
+        Test reciprocity of to_uncerts() and from_uncertainties().
         """
         s_maj, s_min, s_int = 3, 1, 2
         rng = np.random.default_rng()
         azi, plunge, rot = rng.integers(1, 90, size=3)
         e = Ellipsoid(s_maj, s_min, s_int, azi, plunge, rot)
-        uncerts, cross_covs = e.to_uncerts()
-        self.assertEqual(e, Ellipsoid.from_uncerts(uncerts, cross_covs))
+        uncerts, cross_covs = e.to_uncertainties()
+        self.assertEqual(e, Ellipsoid.from_uncertainties(uncerts, cross_covs))
 
     def test_ellipsoid_to_ellipse(self):
         """
@@ -181,9 +181,9 @@ class TestEllipsoidMethods(unittest.TestCase):
         y_errs = (1.33, 0.5, 1.0)
         for c_xy in [0, 0.2, 0.4, 0.6]:
             for (x_err, y_err) in zip(x_errs, y_errs):
-                ell = Ellipse.from_uncerts(x_err, y_err, c_xy, center)
+                ell = Ellipse.from_uncertainties(x_err, y_err, c_xy, center)
                 (x_err_out, y_err_out, c_xy_out, center_out) =\
-                    ell.to_uncerts()
+                    ell.to_uncertainties()
                 self.assertAlmostEqual(x_err, x_err_out)
                 self.assertAlmostEqual(y_err, y_err_out)
                 self.assertAlmostEqual(c_xy, c_xy_out)
@@ -193,12 +193,12 @@ class TestEllipsoidMethods(unittest.TestCase):
         y_err = 1.1
         c_xy = -0.2149
         # Calculate ellipse
-        ell = Ellipse.from_uncerts(x_err, y_err, c_xy, center)
+        ell = Ellipse.from_uncertainties(x_err, y_err, c_xy, center)
         self.assertAlmostEqual(ell.a, 1.120674193646)
         self.assertAlmostEqual(ell.b, 0.451762494786)
         self.assertAlmostEqual(ell.theta, 167.9407699)
         # Calculate covariance error from ellipse
-        (x_err_out, y_err_out, c_xy_out, center_out) = ell.to_uncerts()
+        (x_err_out, y_err_out, c_xy_out, center_out) = ell.to_uncertainties()
         self.assertAlmostEqual(x_err, x_err_out)
         self.assertAlmostEqual(y_err, y_err_out)
         self.assertAlmostEqual(c_xy, c_xy_out)
@@ -216,18 +216,18 @@ class TestEllipsoidMethods(unittest.TestCase):
         c_xy = -0.2149
         cov = [[x_err**2, c_xy], [c_xy, y_err**2]]
         # Calculate ellipse
-        ell = Ellipse.from_cov(cov, center)
+        ell = Ellipse.from_covariance(cov, center)
         self.assertAlmostEqual(ell.a, 1.120674193646)
         self.assertAlmostEqual(ell.b, 0.451762494786)
         self.assertAlmostEqual(ell.theta, 167.9407699)
         # Calculate covariance error from ellipse
-        cov_out, center_out = ell.to_cov()
+        cov_out, center_out = ell.to_covariance()
         self.assertAlmostEqual(cov[0][0], cov_out[0][0])
         self.assertAlmostEqual(cov[0][1], cov_out[0][1])
         self.assertAlmostEqual(cov[1][0], cov_out[1][0])
         self.assertAlmostEqual(cov[1][1], cov_out[1][1])
 
-    def test_ellipse_from_uncerts_baz(self, debug=False):
+    def test_ellipse_from_uncertainties_baz(self, debug=False):
         """
         Verify alternative ellipse creator
 
@@ -241,7 +241,7 @@ class TestEllipsoidMethods(unittest.TestCase):
         baz = 90
         viewpoint = (5, 5)
         # Calculate ellipse
-        ell = Ellipse.from_uncerts_baz(x_err, y_err, c_xy,
+        ell = Ellipse.from_uncertainties_baz(x_err, y_err, c_xy,
                                        dist, baz, viewpoint)
         self.assertAlmostEqual(ell.a, 1.120674193646)
         self.assertAlmostEqual(ell.b, 0.451762494786)
@@ -249,8 +249,8 @@ class TestEllipsoidMethods(unittest.TestCase):
         self.assertAlmostEqual(ell.x, 15)
         self.assertAlmostEqual(ell.y, 5)
         baz = 180
-        ell = Ellipse.from_uncerts_baz(x_err, y_err, c_xy,
-                                       dist, baz, viewpoint)
+        ell = Ellipse.from_uncertainties_baz(
+            x_err, y_err, c_xy, dist, baz, viewpoint)
         self.assertAlmostEqual(ell.x, 5)
         self.assertAlmostEqual(ell.y, -5)
 
