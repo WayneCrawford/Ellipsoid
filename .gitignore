@@ -1,2 +1,3 @@
 ellipsoid.egg-info/**
 ellipsoid/__pycache__/**
+sphinx/**

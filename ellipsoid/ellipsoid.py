@@ -40,6 +40,29 @@ a_max, p_max, r_max = 180., 180., 180.
 class Ellipsoid:
     """
     Class implementing QuakeML OriginUncertainty ConfidenceEllipsoid
+
+    Angles are *intrinsic* (about the axes of the Ellipsoid's coord syst)
+    and are applied in the order azimuth, plunge, rotation (Z-Y-X)
+
+    If all angles = 0, the semi-major axis is N-S and the semi-minor axis
+    is E-W
+
+    :param semi_major: length of the semi-major axis (m)
+    :type semi_major: float
+    :param semi_minor: length of the semi-minor axis (m)
+    :type semi_minor: float
+    :param semi_intermediate: length of the semi-intermediate axis (m)
+    :type semi_intermediate: float
+    :param azimuth: angle to rotate around Z-axis
+    :type azimuth: float
+    :param plunge: angle to rotate around Y-axis
+    :type plunge: float
+    :param rotation: angle to rotate around X-axis
+    :type rotation: float
+    :param center: center of the Ellipse (N, E, Z)
+    :type center: tuple, optional
+    :return: Ellipsoid
+    :rtype: :class: `~ellipsoid.Ellipsoid`
     """
     def __init__(self, semi_major, semi_minor,
                  semi_intermediate, azimuth=0,
@@ -47,29 +70,6 @@ class Ellipsoid:
                  center=(0, 0, 0)):
         """
         Create an Ellipsoid
-
-        Angles are *intrinsic* (about the axes of the Ellipsoid's coord syst)
-        and are applied in the order azimuth, plunge, rotation (Z-Y-X)
-
-        If all angles = 0, the semi-major axis is N-S and the semi-minor axis
-        is E-W
-
-        :param semi_major: length of the semi-major axis (m)
-        :type semi_major: float
-        :param semi_minor: length of the semi-minor axis (m)
-        :type semi_minor: float
-        :param semi_intermediate: length of the semi-intermediate axis (m)
-        :type semi_intermediate: float
-        :param azimuth: angle to rotate around Z-axis
-        :type azimuth: float
-        :param plunge: angle to rotate around Y-axis
-        :type plunge: float
-        :param rotation: angle to rotate around X-axis
-        :type rotation: float
-        :param center: center of the Ellipse (N, E, Z)
-        :type center: tuple, optional
-        :return: Ellipsoid
-        :rtype: :class: `~ellipsoid.Ellipsoid`
         """
         self.semi_major = semi_major
         self.semi_minor = semi_minor
@@ -100,10 +100,8 @@ class Ellipsoid:
         (covers all possible ellipsoids, since ellipsoids are symmetric
         around their principal axes)
 
-        From http://www.visiondummy.com/2014/04/draw-error-ellipse-
-             representing-covariance-matrix/
-        and https://blogs.sas.com/content/iml/2014/07/23/prediction-ellipses-
-            from-covariance.html
+        From http://www.visiondummy.com/2014/04/draw-error-ellipse-representing-covariance-matrix/
+        and https://blogs.sas.com/content/iml/2014/07/23/prediction-ellipses-from-covariance.html
         """
         # Check if 3x3 and symmetric
         cov = np.array(cov)
@@ -142,7 +140,6 @@ class Ellipsoid:
         """
         Set Ellipsoid using epicenter uncertainties and cross_covariances
 
-        Inputs:
         :param errors: (N, E, Z) errors (m)
         :type errors: tuple
         :param cross_covs: (c_NE, c_NZ, c_EZ) covariances (m^2) [(0,0,0)]
@@ -208,9 +205,12 @@ class Ellipsoid:
         """
         Return covariance matrix corresponding to ellipsoid
 
-        Uses cov = eigvecs * diag(eigvals) * inv(eigvecs) (eqn 15,
-        https://www.visiondummy.com/2014/04/
-                        geometric-interpretation-covariance-matrix/)
+        Uses cov = eigvecs * diag(eigvals) * inv(eigvecs)
+        
+        (eqn 15, https://www.visiondummy.com/2014/04/geometric-interpretation-covariance-matrix/)
+        
+        :return: covariance matrix [[NN, NE, NZ], [EN, EE, EZ], [ZN, ZE, ZZ]]
+        :rtype: `~numpy.array`
         """
         eigvals = (self.semi_major**2, self.semi_minor**2,
                    self.semi_intermediate**2)
@@ -236,7 +236,8 @@ class Ellipsoid:
 
         Should probably also create to_Ellipse_ZN() and to_Ellipse_ZE()
         (for side views)
-        :returns: Ellipse
+        
+        :return: Ellipse
         :rtype: :class: `~ellipsoid.Ellipse`
         """
         cov = self.to_covariance()
@@ -249,9 +250,8 @@ class Ellipsoid:
         """
         Return errors and covariances corresponding to ellipsoid
 
-        :returns errors, cross_covs:
-        :rtype errors: 3-tuple of xerr, yerr, zerr errors
-        :rtype cross_covs: 3-tuple of c_ne, c_nz, c_xz
+        :return: errors, cross_covs:
+        :rtype: tuple
         """
         cov = self.to_covariance()
         errors = np.sqrt(np.diag(cov))
@@ -263,8 +263,8 @@ class Ellipsoid:
         """
         Plots ellipsoid viewed from -z, corresponding to view from above
 
-        https://stackoverflow.com/questions/7819498/plotting-ellipsoid-
-              with-matplotlib
+        https://stackoverflow.com/questions/7819498/plotting-ellipsoid-with-matplotlib
+              
         :param viewpt: viewpoint (azimuth, elevation)
         :param outfile: Output file string. Also used to automatically
             determine the output format. Supported file formats depend on your
@@ -358,7 +358,7 @@ class Ellipsoid:
         """
         Return Ellipsoid's rotation
 
-        :returns: Ellipsoids rotation object
+        :return: Ellipsoid's rotation object
         :rtype: :class: `~scipy.spatial.transform.Rotation`
         """
         rot = R.from_euler('ZYX',

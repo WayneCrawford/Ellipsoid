@@ -22,23 +22,24 @@ import warnings
 class Ellipse:
     """
     Class implementing QuakeML OriginUncertainty Ellipse
+
+    If azimuth=0 and center=(0,0), Ellipse is centered at zero with
+    its semi-major axis aligned N-S 
+
+    :param semi_major: length of the semi-major axis (m)
+    :type semi_major: float
+    :param semi_minor: length of the semi-minor axis (m)
+    :type semi_minor: float
+    :param azuimuth: azimuth (degrees clockwise from 0=N)
+    :type b: float
+    :param center: x,y coordinates of ellipse center
+    :type center: tuple of numeric
+    :return: Ellipse
+    :rtype: :class: `~ellipsoid.Ellipse`
     """
     def __init__(self, semi_major, semi_minor, azimuth=0, center=(0, 0)):
         """Create an Ellipse
 
-        If azimuth=0 and center=(0,0), Ellipse is centered at zero with
-        its semi-major axis aligned N-S 
-
-        :param semi_major: length of the semi-major axis (m)
-        :type semi_major: float
-        :param semi_minor: length of the semi-minor axis (m)
-        :type semi_minor: float
-        :param azuimuth: azimuth (degrees clockwise from 0=N)
-        :type b: float
-        :param center: x,y coordinates of ellipse center
-        :type center: tuple of numeric
-        :return: ellipse
-        :rtype: :class: `~~ellipsoid.Ellipse`
         """
         if semi_major < semi_minor:
             warnings.warn('Semi-major smaller than semi-minor! Switching...')
@@ -53,10 +54,8 @@ class Ellipse:
         """Create Ellipse from a covariance matrix
 
         Sources:
-            http://www.visiondummy.com/2014/04/
-                   draw-error-ellipse-representing-covariance-matrix/
-            https://blogs.sas.com/content/iml/2014/07/23/
-                    prediction-ellipses-from-covariance.html
+            http://www.visiondummy.com/2014/04/draw-error-ellipse-representing-covariance-matrix/
+            https://blogs.sas.com/content/iml/2014/07/23/prediction-ellipses-from-covariance.html
 
         :param cov: covariance matrix [[c_xx, c_xy], [c_xy, c_yy]]
         :type cov: numpy.array or list of lists
@@ -112,9 +111,9 @@ class Ellipse:
     @classmethod
     def from_uncertainties_baz(cls, errors, c_xy, dist, baz,
                                viewpoint=(0, 0)):
-        """Set Ellipse using uncertainties, center using distance and back-azimuth
+        """
+        Set Ellipse using uncertainties, center using distance and back-azimuth
 
-        Inputs:
         :param errors: (x, y) error (m)
         :type errors: float
         :param c_xy:  x-y cross-covariance (m^2)
@@ -190,12 +189,11 @@ class Ellipse:
         """Convert to covariance matrix notation
 
         Sources:
-            https://stackoverflow.com/questions/41807958/
-                    convert-position-confidence-ellipse-to-covariance-matrix
+            https://stackoverflow.com/questions/41807958/convert-position-confidence-ellipse-to-covariance-matrix
 
         :returns: covariance_matrix [[c_xx, c_xy], [c_xy, c_yy]],
                  center_position (x,y)
-        :rtype: 2-tuple
+        :rtype: tuple
         """
         sin_theta = np.sin(np.radians(self.theta))
         cos_theta = np.cos(np.radians(self.theta))
@@ -209,13 +207,9 @@ class Ellipse:
     def to_uncertainties(self):
         """Convert to Nordic uncertainty values
 
-        Call as x_err, y_err, c_xy, center =myellipse.to_uncerts()
-
-        :parm self: ellipse
-        :type self: :class: `~obspy.io.nordic.ellipse.Ellipse`
-        :returns: x_error (m), y_error (m),
-                  x-y covariance (dist^2), center (x,y)
-        :rtype: 4-tuple
+        :return: x_error (m), y_error (m),
+                 x-y covariance (m^2), center (x,y)
+        :rtype: tuple
         """
         cov, center = self.to_covariance()
         assert cov[0][1] == cov[1][0]
@@ -227,8 +221,6 @@ class Ellipse:
     def is_inside(self, pt):
         """ Is the given point inside the ellipse?
 
-        :parm self: ellipse
-        :type self: :class: `~obspy.io.nordic.ellipse.Ellipse`
         :param pt: coordinates of the point (x,y)
         :type pt: 2-tuple of floats
         :return: True or False
@@ -244,8 +236,6 @@ class Ellipse:
     def is_on(self, pt):
         """ Is the given point on the ellipse?
 
-        :parm self: ellipse
-        :type self: :class: `~obspy.io.nordic.ellipse.Ellipse`
         :param pt: coordinates of the point (x,y)
         :type pt: 2-tuple of floats
         :return: True or False
@@ -264,7 +254,7 @@ class Ellipse:
         A centered ellipse has its center at 0,0 and its semi-major axis
         along the y-axis
 
-        :parm self: ellipse
+        :param self: ellipse
         :type self: :class: `~obspy.io.nordic.ellipse.Ellipse`
         :param pt: original coordinates of the point (x,y)
         :type pt: 2-tuple of floats
@@ -285,7 +275,7 @@ class Ellipse:
         Assume that the ellipse was "centered" for calculations, now
         put the point back in its true position
 
-        :parm self: ellipse
+        :param self: ellipse
         :type self: :class: `~obspy.io.nordic.ellipse.Ellipse`
         :param pt: original coordinates of the point (x,y)
         :type pt: 2-tuple of floats
@@ -305,8 +295,6 @@ class Ellipse:
         Equation is from http://www.nabla.hr/Z_MemoHU-029.htm
         P = (-a**2 * m/c, b**2 / c)
 
-        :parm self: ellipse
-        :type self: :class: `~obspy.io.nordic.ellipse.Ellipse`
         :param pt: coordinates of the point (x,y)
         :type pt: 2-tuple of floats
         :return: coordinates of both tangent intersections
@@ -337,26 +325,27 @@ class Ellipse:
         return t0, t1
 
     def subtended_angle(self, pt=(0, 0)):
-        """ Find the angle subtended by an ellipse when viewed from x,y
+        """
+        Find the angle subtended by an ellipse when viewed from x,y
 
         Equations are from http://www.nabla.hr/IA-EllipseAndLine2.htm
-        For a "centered" ellipse
-            y=mx+c
-            a^2*m^2 + b^2 = c^2
-            where   x,y are the viewpoint coordinates,
-                    a,b are the semi-* axis
-                    m and c are unknown
-            => (a^2 - x^2)*m^2 + 2*y*x*m + (b^2 - y^2) = 0  [Solve for m]
-            and then c  = y - mx
-
-        :parm self: ellipse
+        
+        :param self: ellipse
         :type self: :class: `~obspy.io.nordic.ellipse.Ellipse`
         :param pt: coordinates of the point (x,y)
         :type pt: 2-tuple of floats
         :return: subtended angle (degrees)
         :rtype: float
-
         """
+        # For a "centered" ellipse:        
+        #   y=mx+c
+        #   a^2*m^2 + b^2 = c^2            
+        #   where: x,y are the viewpoint coordinates,       
+        #          a,b are the semi-* axis
+        #          m and c are unknown
+        #   => (a^2 - x^2)*m^2 + 2*y*x*m + (b^2 - y^2) = 0  [Solve for m]
+        #   then c  = y - mx
+
         # If point is on or inside the ellipse, no need to calculate tangents
         if self.is_on(pt):
             return 180.
@@ -376,8 +365,6 @@ class Ellipse:
              outfile=None, format=None, fig=None, show=False):
         """ Plot the ellipse
 
-        :parm self: ellipse
-        :type self: :class: `~obspy.io.nordic.ellipse.Ellipse`
         :param color: Color of the edges. Defaults to ``'k'`` (black).
         :param npts: Controls the number of interpolation points for the
             curves. Minimum is automatically set to ``100``.
@@ -439,12 +426,8 @@ class Ellipse:
                       outfile=None, format=None, fig=None, show=False):
         """ Plot tangents to an ellipse when viewed from x,y
 
-        :parm self: ellipse
-        :type self: :class: `~obspy.io.nordic.ellipse.Ellipse`
         :param pt: coordinates of the viewpoint (x,y)
         :type pt: 2-tuple of floats
-        :parm self: ellipse
-        :type self: :class: `~obspy.io.nordic.ellipse.Ellipse`
         :param color: Color of the edges. Defaults to ``'k'`` (black).
         :param print_angle: print the subtended angle on the plot (False)
         :param ellipse_name: text to print in the middle of the ellipse (None)
