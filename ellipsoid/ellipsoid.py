@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 QuakeML ConfidenceEllipsoid
 
@@ -7,8 +6,6 @@ QuakeML ConfidenceEllipsoid
 :license:
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
-
-Angles are *intrinsic* (about the axes of the rotating coord syst)
 
 The QuakeML manual states
 'The three Tait-Bryan rotations are performed as follows:
@@ -22,12 +19,8 @@ The QuakeML manual states
     [the x-y geometry]
     can be interpreted as a hypothetical view from the interior of the
     Earth to the inner face of a shell representing Earth’s surface'
-
-The QuakeML document does not specify the Ellipsoid orientation for
-azimuth, plunge, rotation = 0, 0, 0.  We assume that:
-    semi-major is along x (S-N)
-    semi-minor is along y (W-E)
 """
+# -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from future.builtins import *  # NOQA @UnusedWildImport
@@ -45,6 +38,9 @@ a_max, p_max, r_max = 180., 180., 180.
 
 
 class Ellipsoid:
+    """
+    Class implementing QuakeML OriginUncertainty ConfidenceEllipsoid
+    """
     def __init__(self, semi_major, semi_minor,
                  semi_intermediate, azimuth=0,
                  plunge=0, rotation=0,
@@ -54,6 +50,9 @@ class Ellipsoid:
 
         Angles are *intrinsic* (about the axes of the Ellipsoid's coord syst)
         and are applied in the order azimuth, plunge, rotation (Z-Y-X)
+
+        If all angles = 0, the semi-major axis is N-S and the semi-minor axis
+        is E-W
 
         :param semi_major: length of the semi-major axis (m)
         :type semi_major: float

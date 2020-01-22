@@ -7,11 +7,6 @@ Routines for error ellipses in seismological coordinates (N=0, W=90)
 :license:
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
-
-- Calculate an ellipse from the covariance matrix
-- See if a point is inside or on an ellipse
-- Calculate the angle subtended by an ellipse (for back-azimuth uncertainty)
-- Plot an ellipse
 """
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -25,12 +20,14 @@ import warnings
 
 
 class Ellipse:
+    """
+    Class implementing QuakeML OriginUncertainty Ellipse
+    """
     def __init__(self, semi_major, semi_minor, azimuth=0, center=(0, 0)):
         """Create an Ellipse
 
-        The ellipse is assumed to be centered at zero with its semi-major axis
-        axis aligned along the NORTH axis (geographic standard, not math
-        standard!) unless orientation and/or center are set otherwise
+        If azimuth=0 and center=(0,0), Ellipse is centered at zero with
+        its semi-major axis aligned N-S 
 
         :param semi_major: length of the semi-major axis (m)
         :type semi_major: float
